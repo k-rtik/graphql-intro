@@ -23,7 +23,7 @@ public class ArtistServiceIT {
     public static void setupClientAndArtists() {
         artistServiceAPI = GraphQlClientBuilder
                 .newBuilder()
-                .endpoint("http://localhost:9080/graphql-intro/graphql")
+                .endpoint("http://localhost:9080/graphql")
                 .build(ArtistServiceAPI.class);
         artistServiceAPI.reset();
 
