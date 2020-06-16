@@ -45,7 +45,7 @@ public class ArtistService {
         for (String artistName : artistNames) {
             if (!artistMap.containsKey(artistName)) {
                 logger.log(Level.SEVERE, "Cannot find " + artistName);
-                throw new GraphQLException("Cannot find " + artistName);
+                throw new GraphQLException("Cannot find " + artistName, artists);
             }
             artists.add(artistMap.get(artistName));
         }

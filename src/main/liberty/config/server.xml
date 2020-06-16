@@ -13,5 +13,5 @@
                   httpsPort="${default.https.port}"
                   host="*" />
 
-    <application location="guide-graphql-intro.war" contextRoot="/"/>
+    <application location="graphql-intro.war" contextRoot="/"/>
 </server>
