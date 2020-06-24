@@ -1,16 +1,14 @@
 package io.openliberty.guides.graphql.models;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Artist {
     @NotNull
     private String name;
-
     @NotNull
     private String genres;
-
-    @NotNull
     private List<Album> albums;
 
     public Artist() {}
@@ -43,5 +41,26 @@ public class Artist {
 
     public void setAlbums(List<Album> albums) {
         this.albums = albums;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Artist artist = (Artist) o;
+
+        if (getName() != null ? !getName().equals(artist.getName()) : artist.getName() != null) return false;
+        if (getGenres() != null ? !getGenres().equals(artist.getGenres()) : artist.getGenres() != null) return false;
+        return getAlbums() != null ? getAlbums().equals(artist.getAlbums()) : artist.getAlbums() == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getName() != null ? getName().hashCode() : 0;
+        result = 31 * result + (getGenres() != null ? getGenres().hashCode() : 0);
+        result = 31 * result + (getAlbums() != null ? getAlbums().hashCode() : 0);
+        return result;
     }
 }

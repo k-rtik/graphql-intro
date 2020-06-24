@@ -12,10 +12,10 @@ import java.util.List;
 @GraphQlClientApi
 public interface ArtistServiceAPI {
     @Query("artist")
-    Artist getArtist(@Name("artist") String artistName);
+    Artist getArtist(@Name("name") String artistName);
 
     @Query("artist")
-    ArtistWithAlbumCount getArtistWithAlbumCount(@Name("artist") String artistName);
+    ArtistWithAlbumCount getArtistWithAlbumCount(@Name("name") String artistName);
 
     @Query("artists")
     List<Artist> getArtists(@Name("artists") List<String> artistNames);

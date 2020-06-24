@@ -1,0 +1,398 @@
+// Copyright (c) 2020 IBM Corporation and others.
+// Licensed under Creative Commons Attribution-NoDerivatives
+// 4.0 International (CC BY-ND 4.0)
+//   https://creativecommons.org/licenses/by-nd/4.0/
+//
+// Contributors:
+//     IBM Corporation
+//
+:page-layout: guide-multipane
+:projectid: graphql-intro
+:page-duration: 15 minutes
+:page-releasedate: 2020-06-17
+:page-description: Learn how to create and test a GraphQL service using MicroProfile GraphQL and Open Liberty.
+:guide-author: Open Liberty
+:page-related-guides: ['cdi-intro', 'rest-intro']
+:page-guide-category: microprofile
+:page-essential: false
+:page-permalink: /guides/{projectid}
+:common-includes: ../guides-common/
+:imagesdir: /img/guide/{projectid}
+:page-seo-title: Creating a GraphQL service and GrahQL client
+:page-seo-description: Find out how to create and test a GraphQL service on Open Liberty
+= Creating and consuming a GraphQL web service
+
+[.hidden]
+NOTE: This repository contains the guide documentation source. To view the guide in published form,
+view it on the https://openliberty.io/guides/{projectid}.html[Open Liberty website].
+
+Explore how to create a GraphQL web service and consume a GraphQL web service using template interfaces.
+
+:graphiql-url: http://localhost:9080/api/graphiql.html
+:schema-url: http://localhost:9080/api/graphql/schema.graphql
+
+== What you'll learn
+
+You'll learn how to create and test a microservice using MicroProfile GraphQL and Open Liberty.
+You'll use Maven throughout the guide to build the microservice and deploy it
+to run on the Open Liberty application server.
+
+=== What is GraphQL
+GraphQL is an open-source data query and manipulation language for APIs, and a runtime for fulfilling these queries with
+existing data.
+
+GraphQL queries specify the shape of the response data, which allows users to get exactly what data they want.
+GraphQL APIs contain a single endpoint that handles queries. GraphQL APIs are defined by Types and Fields as opposed
+to being defined by endpoints like REST APIs. This enables GraphQL APIs to operate on multiple resources in the single
+query where REST APIs would require loading the data from multiple URLs.
+
+You will create a GraphQL web service that queries, manipulates and stores album and artist information.
+The artist and album resources are provided in JSON files.
+
+///////////////////////////
+// Getting started
+///////////////////////////
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/gitclone.adoc[]
+
+///////////////////////////
+// Try what you’ll build
+///////////////////////////
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-intro.adoc[]
+
+//--** Describe what user should run and expect to see after running the complete version of the application.
+You are provided with Graphiql, an interactive in-browser GraphQL IDE, which is served by the Open Liberty server.
+You can use Graphiql to perform queries in with an interactive interface to assist in development and testing of the API.
+
+Once the server is running, access {graphiql-url}[{graphiql-url}^].
+Run the following query to get the artist data for Drake:
+
+[role='command']
+----
+query {
+    artist(artist: "Drake") {
+        name
+        genres
+        albums {
+            title
+            year
+            ntracks
+        }
+    }
+}
+----
+
+The response returned by the API is:
+
+[role='no_copy']
+----
+{
+  "data": {
+    "artist": {
+      "name": "Drake",
+      "genres": "Hip Hop",
+      "albums": [
+        {
+          "title": "Thank Me Later",
+          "year": "2010",
+          "ntracks": 14
+        },
+        {
+          "title": "Take Care",
+          "year": "2011",
+          "ntracks": 18
+        },
+        {
+          "title": "Nothing Was the Same",
+          "year": "2013",
+          "ntracks": 13
+        },
+        {
+          "title": "Views",
+          "year": "2016",
+          "ntracks": 20
+        },
+        {
+          "title": "Scorpion",
+          "year": "2018",
+          "ntracks": 25
+        }
+      ]
+    }
+  }
+}
+----
+
+The query must always specify the required fields and only those fields are returned by the API.
+Run the following query to request only the `name` and `genres` field of artists Drake and Rihanna.
+
+[role='command']
+----
+query {
+    artist(artist: "Drake") {
+        name
+        genres
+        albums {
+            title
+            year
+            ntracks
+        }
+    }
+}
+----
+
+The response returned by the API is:
+
+[role='no_copy']
+----
+query {
+  artists(artists: ["Drake", "Rihanna"]) {
+    name
+    genres
+  }
+}
+----
+
+Access {schema-url}[{schema-url}^] to view the API schema.
+The API schema is:
+
+[role='no_copy']
+----
+type Album {
+  ntracks: Int!
+  title: String
+  year: String
+}
+
+type Artist {
+  albumCount: Int!
+  albums: [Album]!
+  genres: String!
+  name: String!
+}
+
+"Mutation root"
+type Mutation {
+  addArtist(artist: ArtistInput): Boolean!
+  reset: Int!
+}
+
+"Query root"
+type Query {
+  artist(name: String): Artist
+  artists(artists: [String]): [Artist]
+}
+
+input AlbumInput {
+  ntracks: Int!
+  title: String
+  year: String
+}
+
+input ArtistInput {
+  albums: [AlbumInput]!
+  genres: String!
+  name: String!
+}
+----
+The `!` beside the type of a field indicates that its value cannot be null.
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
+
+== Section title for this section, starting with a gerund like Creating, Building, etc
+
+//--** Add the various sections that are needed for a particular guide.
+
+//--** Start each additional section title with a meaningful gerund such as Creating, Building, Testing.
+//--** Follow the gerund with a meaningful noun phrase. For example: Creating a JAX-RS application
+//--** Have as many sections and section titles as needed.
+// EXAMPLES:
+
+* Building a todo list model
+
+* Creating an application manager
+
+* Creating the JAX-RS Resource
+
+
+//--** Write a sentence with the context like "Navigate to the `start` directory to begin." in the section
+//--** where user starts working with the implementation.
+
+//--** Add the include adoc for starting the Open Liberty server in development mode,
+//--** so that the server automatically picks up any changes that the users make to their application.
+
+//--** You can instruct the user to "Create", "Update", or "Replace" files in their application.
+
+//--** Note: There are classes that depend on each other. If one of the classes is not yet created
+//--** in the `start` directory, but it's being referenced in a different class, development mode might exit with a compilation error.
+//--** So be aware that you might need to predefine a minimal version of that class so that development mode does not exit with an error.
+
+//--** What to add for each section:
+//--** Start each section with a meaningful description about what the user is doing in the section.
+//--** Include code snippets.
+//--** Avoid making all the documentation a series of steps and tasks, bullets, or numbered lists.
+//--** Use tick marks around directories, files, values, class names, method names, and so on.
+//--** Example: `this-is-a-file`, `this/is/a/path`, `thisIsAMethod`.
+
+
+
+// EXAMPLE: The following block demonstrates how different sections look like for a todo application.
+// ======================================================================================================
+== EXAMPLE: Building a todo list model
+
+* Navigate to the `start` directory
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-start.adoc[]
+
+* Represent an entry in a todo list
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `TodoModel` class.#
+`src/main/java/io/openliberty/guides/todolistSample/models/TodoModel.java`
+----
+
+TodoModel.java
+[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+----
+link:finish/src/main/java/io/openliberty/guides/todolistSample/models/TodoModel.java[]
+----
+
+* Getters, setters, and default constructor such that the model can be serialized/deserialized easily
+
+== EXAMPLE: Creating an application manager
+
+* Create a manager that is injected into the JAX-RS resource
+
+[role="code_command hotspot file=0", subs="quotes"]
+----
+#Create the `TodoManager` interface.#
+`src/main/java/io/openliberty/guides/todo/managers/TodoManager.java`
+----
+
+TodoManager.java
+[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+----
+link:finish/src/main/java/io/openliberty/guides/todolistSample/managers/TodoManager.java[]
+----
+
+* Next, create the sample todo manager class
+
+[role="code_command hotspot file=1", subs="quotes"]
+----
+#Create the `SampleTodoManager` class.#
+`src/main/java/io/openliberty/guides/todolistSample/managers/samples/SampleTodoManager.java`
+----
+
+SampleTodoManager.java
+[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+----
+link:finish/src/main/java/io/openliberty/guides/todolistSample/managers/samples/SampleTodoManager.java[]
+----
+
+* Implemented basic CRUD ([hotspot=32-36 file=1]`Create`, [hotspot=39-44 file=1]`Read`,
+[hotspot=47-57 file=1]`Update`, and [hotspot=60-68 file=1]`Delete`) operations.
+* Manager is [hotspot=14 file=1]`ApplicationScoped`, which essentially means that it is a singleton.
+
+== EXAMPLE: Creating the JAX-RS resource
+
+* Description of the technology, possibly with a link to learn more.
+* Use CDI to inject the todo manager into the resource
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `TodoResource` class.#
+`src/main/java/io/openliberty/guides/todolistSample/resources/TodoResource.java`
+----
+
+TodoResource.java
+[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+----
+link:finish/src/main/java/io/openliberty/guides/todolistSample/resources/TodoResource.java[]
+----
+
+* The resource methods are accessible via HTTP
+* Use [hotspot=27-43]`GET`, [hotspot=45-54]`POST`, [hotspot=56-71]`PUT`,
+and [hotspot=73-83]`DELETE` verbs to handle reading, creating, updating,
+and deleting resources
+* Validate data models and send appropriate response accordingly
+// ======================================================================================================
+
+
+
+
+//////////////////////////////////////////
+// Running the application
+//////////////////////////////////////////
+
+//--** Use the following include to pull in the adoc saying that development mode was already run,
+//--** and the changes were automatically picked up.
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
+//--** This include adoc will have the subheading "Running the application".
+//--** If you are not using this command include statement, you'll need to add it as a subheading,
+//--** ie, "== Running the application".
+
+//--** In between here, you should state where you application can be found now that its running. ie. urls
+//--** Sample usage of the application
+//--** Suggestions for what changes the reader can make to explore the code
+
+
+== Testing the application
+
+//--** Show how to test your application.
+
+// EXAMPLE:
+// ======================================================================================================
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `TodoIT` class.#
+`finish/src/test/java/it/io/openliberty/guides/todo/TodoIT.java`
+----
+
+TodoIT.java
+[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+----
+link:finish/src/test/java/it/io/openliberty/guides/todolistSample/TodoIT.java[]
+----
+
+* Explain what each [hotspot=13-20]`@Test` test case is testing
+* Explain key methods
+// ======================================================================================================
+
+//--** Include this for info on how to run the tests
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-test.adoc[]
+
+//--** Including a listing block with test results here
+//--** Show console output of the test results
+
+//--** OPTIONAL: after listing the test results, mention a simple change a user can make/introduce that
+//--** will cause the tests to fail. Be brief and don't give the users all of the instructions.
+//--** At this point, they should be comfortable enough to figure it out on their own.
+
+//--** Include this for info on how to quit development mode
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-quit.adoc[]
+
+
+== Great work! You're done!
+
+//--** Briefly summarize what the user achieved in this guide (1-2 sentences).
+EXAMPLE: You have just completed building a simple todo list application using JAXRS and CDI services in Open Liberty.
+
+//--** OPTIONAL: briefly state what the user could do next now that they've learned the
+//--** technologies in this guide.
+
+//--** Include the below from the guides-common repo to tell users how they can contribute to the guide
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/attribution.adoc[]
+
+//--** DO NO CREATE ANYMORE SECTIONS AT THIS POINT
+//--** Related guides will be added in automatically here if you included them in ":page-related-guides"
+// ------------ END ------------

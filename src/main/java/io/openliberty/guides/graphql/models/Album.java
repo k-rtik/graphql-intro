@@ -3,11 +3,14 @@ package io.openliberty.guides.graphql.models;
 import org.eclipse.microprofile.graphql.Name;
 
 import javax.json.bind.annotation.JsonbProperty;
+import javax.validation.constraints.NotNull;
 
 public class Album {
+    @NotNull
     private String title;
+    @NotNull
     private String year;
-
+    @NotNull
     @Name("ntracks")
     private int trackCount;
 

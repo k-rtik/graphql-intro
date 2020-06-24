@@ -1,91 +1,14 @@
-{
-  "Billie Holiday": {
+[
+  {
     "name": "Billie Holiday",
-    "genres": "Jazz",
-    "albums": [
-      {
-        "title": "Billie Holiday Sings",
-        "year": "1952",
-        "ntracks": 8
-      },
-      {
-        "title": "Body and Soul",
-        "year": "1957",
-        "ntracks": 8
-      },
-      {
-        "title": "Last Recording",
-        "year": "1959",
-        "ntracks": 12
-      }
-    ]
+    "genres": "Jazz"
   },
-  "The Beatles": {
+  {
     "name": "The Beatles",
-    "genres":  "Rock, Pop",
-    "albums": [
-      {
-        "title": "With the Beatles",
-        "year": "1963",
-        "ntracks": 14
-      },
-      {
-        "title": "Abbey Road",
-        "year": "1969",
-        "ntracks": 17
-      },
-      {
-        "title": "Let It Be",
-        "year": "1969",
-        "ntracks": 12
-      }
-    ]
+    "genres":  "Rock, Pop"
   },
-  "Rihanna": {
-    "name": "Rihanna",
-    "genres": "Pop, R&B",
-    "albums": [
-      {
-        "title": "Music of the Sun",
-        "year": "2005",
-        "ntracks": 13
-      },
-      {
-        "title": "Anti",
-        "year": "2016",
-        "ntracks": 13
-      }
-    ]
-  },
-  "Drake": {
+  {
     "name": "Drake",
-    "genres": "Hip Hop",
-    "albums": [
-      {
-        "title": "Thank Me Later",
-        "year": "2010",
-        "ntracks": 14
-      },
-      {
-        "title": "Take Care",
-        "year": "2011",
-        "ntracks": 18
-      },
-      {
-        "title": "Nothing Was the Same",
-        "year": "2013",
-        "ntracks": 13
-      },
-      {
-        "title": "Views",
-        "year": "2016",
-        "ntracks": 20
-      },
-      {
-        "title": "Scorpion",
-        "year": "2018",
-        "ntracks": 25
-      }
-    ]
+    "genres": "Hip Hop"
   }
-}
+]
