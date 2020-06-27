@@ -3,9 +3,11 @@ package io.openliberty.guides.graphql.client.models;
 import io.openliberty.guides.graphql.models.Album;
 import io.openliberty.guides.graphql.models.Artist;
 
+import javax.validation.constraints.NotNull;
 import java.util.List;
 
 public class ArtistWithAlbumCount extends Artist {
+    @NotNull
     private int albumCount;
 
     public ArtistWithAlbumCount() {}

@@ -6,14 +6,8 @@ import org.eclipse.microprofile.graphql.*;
 
 import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import java.util.logging.Level;
+import java.util.*;
 import java.util.logging.Logger;
 
 @GraphQLApi
@@ -21,10 +15,9 @@ import java.util.logging.Logger;
 public class ArtistService {
 
     private Logger logger = Logger.getLogger(getClass().getName());
-//    private Map<String, Artist> artistMap = new HashMap<>();
 
-    private List<Artist> artists = new ArrayList<Artist>();
-    private List<Album> albums = new ArrayList<Album>();
+    private Map<String, Artist> artists = new HashMap<>();
+    private Map<String, List<Album>> albums = new HashMap<>();
 
     @PostConstruct
     public void initialize() {
@@ -36,56 +29,67 @@ public class ArtistService {
     // Query means top level
     @Query("artist")
     public Artist getArtist(@Name("name") String artistName) throws GraphQLException {
-        for (Artist artist : artists) {
-            if (artist.getName().equals(artistName)) {
-                return artist;
+
+        if (!artists.containsKey(artistName) || !albums.containsKey(artistName)) {
+            logger.severe("Cannot find " + artistName);
+            throw new GraphQLException("Cannot find " + artistName);
+        }
+
+        Artist toReturn = artists.get(artistName);
+        toReturn.setAlbums(albums.get(artistName));
+
+        return toReturn;
+    }
+
+    // Get multiple objects with different properties returned for each
+    @Query("artists")
+    public List<Artist> getArtists(@Name("names") String[] artistNames) throws GraphQLException {
+        List<Artist> toReturn = new ArrayList<>();
+        List<String> missingArtists = new ArrayList<>();
+        for (String artistName : artistNames) {
+            try {
+                toReturn.add(getArtist(artistName));
+            } catch (GraphQLException e) {
+                missingArtists.add(artistName);
             }
         }
 
-        logger.log(Level.SEVERE, "Cannot find " + artistName);
-        throw new GraphQLException("Cannot find " + artistName);
+        if (missingArtists.size() != 0) {
+            String missingArtistNames = String.join(", ", missingArtists);
+            logger.severe("Cannot find the following artists: " + missingArtistNames);
+            throw new GraphQLException("Cannot find the following artists: " + missingArtistNames, toReturn);
+        }
+        return toReturn;
     }
 
-//    // Get multiple objects with different properties returned for each
-//    @Query("artists")
-//    public List<Artist> getArtists(@Name("artists") String[] artistNames) throws GraphQLException {
-//        List<Artist> artists = new ArrayList<>();
-//        for (String artistName : artistNames) {
-//            if (!artistMap.containsKey(artistName)) {
-//                logger.log(Level.SEVERE, "Cannot find " + artistName);
-//                throw new GraphQLException("Cannot find " + artistName, artists);
-//            }
-//            artists.add(artistMap.get(artistName));
-//        }
-//        return artists;
-//    }
-//
-//    // Get a property that is not part of the object
-//    // Source makes return value part of schema of Source
-//    public int albumCount(@Source Artist artist) {
-//        return artist.getAlbums().size();
-//    }
-//
-//    @Mutation("addArtist")
-//    public boolean addArtist(@Name("artist") Artist artist) throws GraphQLException {
-//        if (artistMap.containsKey(artist.getName())) {
-//            logger.log(Level.SEVERE, "Artist already exists in map: " + artist.getName());
-//            throw new GraphQLException("Artist already exists in map: " + artist.getName());
-//        }
-//        try {
-//            artistMap.put(artist.getName(), artist);
-//        } catch (Exception e) {
-//            logger.log(Level.SEVERE, "Could not add artist " + artist.getName() + ":", e);
-//            throw new GraphQLException("Could not add artist: " + artist.getName());
-//        }
-//
-//        return true;
-//    }
-//
-//    @Mutation
-//    public int reset() {
-//        int artistCount = artistMap.size();
-//        initialize();
-//        return artistCount;
-//    }
+    // Get a property that is not part of the object
+    // Source makes return value part of schema of Source
+    public int albumCount(@Source Artist artist) {
+        return artist.getAlbums().size();
+    }
+
+    @Mutation
+    public boolean addArtist(@Name("artist") Artist artist) throws GraphQLException {
+        if (artists.containsKey(artist.getName()) || albums.containsKey(artist.getName())) {
+            logger.severe("Artist already exists in map: " + artist.getName());
+            throw new GraphQLException("Artist already exists in map: " + artist.getName());
+        }
+        try {
+            artists.put(artist.getName(), artist);
+            albums.put(artist.getName(), artist.getAlbums());
+        } catch (Exception e) {
+            logger.severe("Could not add artist " + artist.getName());
+            logger.severe("Caused by: " + Arrays.toString(e.getStackTrace()));
+            throw new GraphQLException("Could not add artist: " + artist.getName());
+        }
+
+        return true;
+    }
+
+    @Mutation
+    public int reset() {
+        int artistCount = artists.size();
+        initialize();
+        return artistCount - artists.size();
+    }
 }

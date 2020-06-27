@@ -17,17 +17,26 @@ import java.util.Map;
 public class ArtistServiceIT {
 
     private static ArtistServiceAPI artistServiceAPI;
+
     private static Map<String, Artist> expectedArtistMap;
+    private static Map<String, List<Album>> expectedAlbumsMap;
 
     @BeforeAll
     public static void setupClientAndArtists() {
+
+        System.out.println("Hi");
+
         artistServiceAPI = GraphQlClientBuilder
                 .newBuilder()
-                .endpoint("http://localhost:9080/graphql")
+                .endpoint("http://localhost:9080/api/graphql")
                 .build(ArtistServiceAPI.class);
-        artistServiceAPI.reset();
 
-        expectedArtistMap = JsonService.getArtistMap();
+        System.out.println("Hello");
+        artistServiceAPI.reset();
+        System.out.println("Boom");
+
+        expectedArtistMap = JsonService.getArtists();
+        expectedAlbumsMap = JsonService.getAlbums();
     }
 
     @Test
@@ -35,6 +44,7 @@ public class ArtistServiceIT {
     public void testGetArtist() {
         Artist drake = artistServiceAPI.getArtist("Drake");
         verifyArtist(drake, expectedArtistMap.get("Drake"));
+        verifyAlbums(drake, expectedAlbumsMap.get("Drake"));
     }
 
     @Test
@@ -51,6 +61,7 @@ public class ArtistServiceIT {
                 Arrays.asList("Drake", "The Beatles", "Billie Holiday"));
         for (Artist artist: artists) {
             verifyArtist(artist, expectedArtistMap.get(artist.getName()));
+            verifyAlbums(artist, expectedAlbumsMap.get(artist.getName()));
         }
     }
 
@@ -59,6 +70,7 @@ public class ArtistServiceIT {
     public void testGetArtistWithAlbumCount() {
         ArtistWithAlbumCount rihanna = artistServiceAPI.getArtistWithAlbumCount("Rihanna");
         verifyArtist(rihanna, expectedArtistMap.get("Rihanna"));
+        verifyAlbums(rihanna, expectedAlbumsMap.get("Rihanna"));
     }
 
     @Test
@@ -71,10 +83,13 @@ public class ArtistServiceIT {
                 Arrays.asList("Drake", "The Beatles", "Billie Holiday", "New Artist"));
 
         for (ArtistWithAlbumCount artistWithAlbumCount : artistsWithAlbumCount) {
-            if (artistWithAlbumCount.getName().equals(newArtist.getName()))
+            if (artistWithAlbumCount.getName().equals(newArtist.getName())) {
                 verifyArtist(artistWithAlbumCount, newArtist);
-            else
+                verifyAlbums(artistWithAlbumCount, newArtist.getAlbums());
+            } else {
                 verifyArtist(artistWithAlbumCount, expectedArtistMap.get(artistWithAlbumCount.getName()));
+                verifyAlbums(artistWithAlbumCount, expectedAlbumsMap.get(artistWithAlbumCount.getName()));
+            }
         }
 
         Assertions.assertThrows(GraphQlClientException.class, () ->
@@ -85,7 +100,7 @@ public class ArtistServiceIT {
     @Order(6)
     public void testResetMutation() {
         int artistCount = artistServiceAPI.reset();
-        Assertions.assertEquals(artistCount, expectedArtistMap.size() + 1);
+        Assertions.assertEquals(artistCount, 1);
     }
 
     private void verifyArtist(Artist actualArtist, Artist expectedArtist) {
@@ -93,11 +108,13 @@ public class ArtistServiceIT {
                 "Returned artist does not have the correct name");
         Assertions.assertEquals( expectedArtist.getGenres(), actualArtist.getGenres(),
                 "Returned artist does not have the correct genres");
-        Assertions.assertIterableEquals(actualArtist.getAlbums(), expectedArtist.getAlbums(),
-                "Returned artist does not have the correct albums");
+    }
 
+    private void verifyAlbums(Artist actualArtist, List<Album> expectedAlbums) {
+        Assertions.assertIterableEquals(expectedAlbums, actualArtist.getAlbums(),
+                "Returned artist does not have the correct albums");
         if (actualArtist instanceof ArtistWithAlbumCount) {
-            Assertions.assertEquals(expectedArtist.getAlbums().size(),
+            Assertions.assertEquals(expectedAlbums.size(),
                     ((ArtistWithAlbumCount) actualArtist).getAlbumCount(),
                     "Returned artist does not have the correct album count");
         }

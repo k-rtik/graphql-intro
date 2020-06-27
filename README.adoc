@@ -85,68 +85,9 @@ query {
 }
 ----
 
-The response returned by the API is:
-
-[role='no_copy']
-----
-{
-  "data": {
-    "artist": {
-      "name": "Drake",
-      "genres": "Hip Hop",
-      "albums": [
-        {
-          "title": "Thank Me Later",
-          "year": "2010",
-          "ntracks": 14
-        },
-        {
-          "title": "Take Care",
-          "year": "2011",
-          "ntracks": 18
-        },
-        {
-          "title": "Nothing Was the Same",
-          "year": "2013",
-          "ntracks": 13
-        },
-        {
-          "title": "Views",
-          "year": "2016",
-          "ntracks": 20
-        },
-        {
-          "title": "Scorpion",
-          "year": "2018",
-          "ntracks": 25
-        }
-      ]
-    }
-  }
-}
-----
-
-The query must always specify the required fields and only those fields are returned by the API.
 Run the following query to request only the `name` and `genres` field of artists Drake and Rihanna.
 
 [role='command']
-----
-query {
-    artist(artist: "Drake") {
-        name
-        genres
-        albums {
-            title
-            year
-            ntracks
-        }
-    }
-}
-----
-
-The response returned by the API is:
-
-[role='no_copy']
 ----
 query {
   artists(artists: ["Drake", "Rihanna"]) {
@@ -156,20 +97,152 @@ query {
 }
 ----
 
+Run the following query to add a new artist to the service:
+
+[role='command']
+----
+mutation {
+  addArtist(artist: {
+    name: "Elvis Presley",
+    genres: "Rock and Roll",
+    albums: [
+      {
+        title: "Elvis Presley"
+        ntracks: 12
+        year: "1956"
+      }
+    ]
+  })
+}
+----
+
 Access {schema-url}[{schema-url}^] to view the API schema.
-The API schema is:
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
+
+== Building the application
+
+Navigate to the `start` directory
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-start.adoc[]
+
+=== Enabling GraphQL
+
+The MicroProfile GraphQL feature enables GraphQL support for your application.
+This feature is already enabled in the `configuration file`.
+
+=== Creating the GraphQL API
+
+In GraphQL, a single class should represent a single resource, or a group of resources of the same type.
+In this application, artists and albums are the two resources. Since the two resources are related, they can be
+represented by a single class.
+
+The `start` folder already contains the data files, `artists.json` and `albums.json`, and their respective model classes,
+`Album` and `Artist`.
+The `start` folder also contains `JsonService`, a static class to deserialize the artist and album data from data files
+into the model classes.
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistService` class.#
+`src/main/java/io/openliberty/guides/graphql/ArtistService.java`
+----
+
+The `@GraphQLApi` annotation indicates that `ArtistService` is a GraphQL endpoint.
+Methods in this class can define GraphQL queries and annotations.
+
+Entities are the objects used in GraphQL. An entity is created in the schema from a custom Java class when the class is
+used as the return type or argument of a query or mutation method, or the return type of a method that has a
+`@Source` annotation applied on an argument.
+
+Queries are GraphQL requests that request all or specific fields of an object.
+A GraphQL query is created in the schema for any method in `ArtistService` annotated with `@Query`.
+The value parameter of the `@Query` annotation is used for the name of the GraphQL query.
+If the value parameter is not provided, the method's name is used as the query's name.
+
+Mutations are GraphQL requests that modify a resource.
+A GraphQL mutation is created in the schema for any method in `ArtistService` annotated with `@Mutation`.
+Similar to `@Query`, the value parameter of the `@Mutation` annotation is used for the name of the GraphQL mutation.
+If the value parameter is not provided, the method's name is used as the query's name.
+
+The value parameter of the `@Name` annotation is used for the name of the GraphQL query or mutation parameter.
+If the value parameter is not provided, the method argument's name is used as the the query parameter's name.
+
+The `@Name` parameter can also be used to change the name of an attribute used in a class that represents a GraphQL
+entity. The value parameter of the `@Name` annotation is used for the field name in the corresponding GraphQL
+entity.
+
+=== Implementing queries
+
+The `ArtistService` class contains two queries, `artist` and `artists`.
+
+The `getArtist()` method implements the `artist` query, which retrieves the artist corresponding to the name supplied
+by the argument `name`. When an artist is not found, a `GraphQLException` is thrown, which returns an `error` object
+to the client.
+
+The `getArtists()` method implements the `artists` query, which retrieves a list of artists corresponding to the list of
+artist names supplied by the `names` argument. When artists in the list of names are not found, a `GraphQLException`
+is thrown, which returns an `error` object containing the missing names to the client.
+
+The `getArtists()` method gets all possible results instead of throwing a `GraphQLException` on the first unknown artist.
+Since GraphQL handles partial results when an error occurs, the found artist objects are returned to the client
+alongside the error when `GraphQLException` is thrown.
+
+=== Implementing mutations
+
+The `ArtistService` class contains two mutations, `addArtist` and `reset`.
+
+The `addArtist()` method implements the `addArtist` mutation, which adds a new artist to the service. If an artist with
+the same name already exists in the service, the `addArtist()` method throws a `GraphQLException`.
+
+The artist to add to the service is passed to the `addArtist` query through the `artist` argument. When the entity
+passed to the artist parameter does not contain an attribute in the `Artist` or `Album` class, the value is set as `null`.
+
+When the `@NotNull` annotation is used on an attribute in the `Artist` and `Album` class, an error is thrown when the
+entity passed to the `artist` parameter of `addArtist` does not contain that field or if the value of the field
+is `null`.
+
+The `reset()` method implements the `reset` mutation, which resets the data handled by the service to the data
+deserialized from the JSON data files. This method returns the number of artists removed from the service when the
+data is reset.
+
+=== Extending the Artist entity
+
+The `artist` argument (of type `Artist`) of  the `albumCount()` method is annotated with `@Source`.
+Since the type `Artist` is returned by a GraphQL query, the `@Source` annotation adds the name of the method,
+`albumCount` as a property to the `Artist` GraphQL entity.
+
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+//////////////////////////////////////////
+// Running the application
+//////////////////////////////////////////
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
+
+Access {schema-url}[{schema-url}^] to view the API schema.
+
+The schema for this API looks like:
 
 [role='no_copy']
 ----
 type Album {
   ntracks: Int!
-  title: String
-  year: String
+  title: String!
+  year: String!
 }
 
 type Artist {
   albumCount: Int!
-  albums: [Album]!
+  albums: [Album]
   genres: String!
   name: String!
 }
@@ -188,196 +261,239 @@ type Query {
 
 input AlbumInput {
   ntracks: Int!
-  title: String
-  year: String
+  title: String!
+  year: String!
 }
 
 input ArtistInput {
-  albums: [AlbumInput]!
+  albums: [AlbumInput]
   genres: String!
   name: String!
 }
 ----
-The `!` beside the type of a field indicates that its value cannot be null.
+
+The `!` in the schema indicates that the field of an entity (type or input), or the return value of a mutation, is
+not `null`.
+
+Notice that the schema lists `albumCount: Int!` as part of the type Artist, but `albumCount` is not an attribute of the
+`Artist` class. The `@Source` annotation applied on the `artist` argument of `albumCount()` associates the return value
+of the method, an integer, to the `albumCount` field of the GraphQL type Artist.
+
+Access {graphiql-url}[{graphiql-url}^] to open Graphiql.
+
+When you run a GraphQL query, you are required to specify the properties you want for an entity. The result object
+has only the specified properties.
+
+Run the following query to request the name and number of albums of The Beatles stored in `ArtistService`,
+and the titles of their albums:
 
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
+----
+query {
+  artist(name: "The Beatles") {
+    name
+    albumCount
+    albums {
+      title
+    }
+  }
+}
+----
 
-== Section title for this section, starting with a gerund like Creating, Building, etc
-
-//--** Add the various sections that are needed for a particular guide.
-
-//--** Start each additional section title with a meaningful gerund such as Creating, Building, Testing.
-//--** Follow the gerund with a meaningful noun phrase. For example: Creating a JAX-RS application
-//--** Have as many sections and section titles as needed.
-// EXAMPLES:
-
-* Building a todo list model
-
-* Creating an application manager
-
-* Creating the JAX-RS Resource
-
-
-//--** Write a sentence with the context like "Navigate to the `start` directory to begin." in the section
-//--** where user starts working with the implementation.
-
-//--** Add the include adoc for starting the Open Liberty server in development mode,
-//--** so that the server automatically picks up any changes that the users make to their application.
-
-//--** You can instruct the user to "Create", "Update", or "Replace" files in their application.
-
-//--** Note: There are classes that depend on each other. If one of the classes is not yet created
-//--** in the `start` directory, but it's being referenced in a different class, development mode might exit with a compilation error.
-//--** So be aware that you might need to predefine a minimal version of that class so that development mode does not exit with an error.
-
-//--** What to add for each section:
-//--** Start each section with a meaningful description about what the user is doing in the section.
-//--** Include code snippets.
-//--** Avoid making all the documentation a series of steps and tasks, bullets, or numbered lists.
-//--** Use tick marks around directories, files, values, class names, method names, and so on.
-//--** Example: `this-is-a-file`, `this/is/a/path`, `thisIsAMethod`.
-
-
-
-// EXAMPLE: The following block demonstrates how different sections look like for a todo application.
-// ======================================================================================================
-== EXAMPLE: Building a todo list model
-
-* Navigate to the `start` directory
+Run the following query to request the name and title of albums of multiple artists, including an artist that does not
+exist:
 
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-start.adoc[]
-
-* Represent an entry in a todo list
-
-[role="code_command hotspot", subs="quotes"]
 ----
-#Create the `TodoModel` class.#
-`src/main/java/io/openliberty/guides/todolistSample/models/TodoModel.java`
-----
-
-TodoModel.java
-[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
-----
-link:finish/src/main/java/io/openliberty/guides/todolistSample/models/TodoModel.java[]
+query {
+  artists(names: ["Unknown", "Billie Holiday"]) {
+    name
+    albums {
+      title
+    }
+  }
+}
 ----
 
-* Getters, setters, and default constructor such that the model can be serialized/deserialized easily
+Notice that the result of the query contains both the error for the unknown artist and the partial results for the
+query, which contains the artist objects for the artists that exist.
 
-== EXAMPLE: Creating an application manager
+The above query can only get the same fields from multiple artist entities. Since GraphQL can support multiple queries
+in a single request, you can get different fields for multiple artist entities by running the following request:
 
-* Create a manager that is injected into the JAX-RS resource
-
-[role="code_command hotspot file=0", subs="quotes"]
-----
-#Create the `TodoManager` interface.#
-`src/main/java/io/openliberty/guides/todo/managers/TodoManager.java`
-----
-
-TodoManager.java
-[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
-----
-link:finish/src/main/java/io/openliberty/guides/todolistSample/managers/TodoManager.java[]
-----
-
-* Next, create the sample todo manager class
-
-[role="code_command hotspot file=1", subs="quotes"]
-----
-#Create the `SampleTodoManager` class.#
-`src/main/java/io/openliberty/guides/todolistSample/managers/samples/SampleTodoManager.java`
-----
-
-SampleTodoManager.java
-[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
-----
-link:finish/src/main/java/io/openliberty/guides/todolistSample/managers/samples/SampleTodoManager.java[]
-----
-
-* Implemented basic CRUD ([hotspot=32-36 file=1]`Create`, [hotspot=39-44 file=1]`Read`,
-[hotspot=47-57 file=1]`Update`, and [hotspot=60-68 file=1]`Delete`) operations.
-* Manager is [hotspot=14 file=1]`ApplicationScoped`, which essentially means that it is a singleton.
-
-== EXAMPLE: Creating the JAX-RS resource
-
-* Description of the technology, possibly with a link to learn more.
-* Use CDI to inject the todo manager into the resource
-
-[role="code_command hotspot", subs="quotes"]
-----
-#Create the `TodoResource` class.#
-`src/main/java/io/openliberty/guides/todolistSample/resources/TodoResource.java`
-----
-
-TodoResource.java
-[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
-----
-link:finish/src/main/java/io/openliberty/guides/todolistSample/resources/TodoResource.java[]
-----
-
-* The resource methods are accessible via HTTP
-* Use [hotspot=27-43]`GET`, [hotspot=45-54]`POST`, [hotspot=56-71]`PUT`,
-and [hotspot=73-83]`DELETE` verbs to handle reading, creating, updating,
-and deleting resources
-* Validate data models and send appropriate response accordingly
-// ======================================================================================================
-
-
-
-
-//////////////////////////////////////////
-// Running the application
-//////////////////////////////////////////
-
-//--** Use the following include to pull in the adoc saying that development mode was already run,
-//--** and the changes were automatically picked up.
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
-//--** This include adoc will have the subheading "Running the application".
-//--** If you are not using this command include statement, you'll need to add it as a subheading,
-//--** ie, "== Running the application".
+----
+query {
+  BillieHoliday: artist(name: "Billie Holiday") {
+    name
+    genres
+  }
+  Unknown: artist(name: "Unknown") {
+    name
+  }
+  Drake: artist(name: "Drake") {
+    name
+    albumCount
+  }
+}
+----
 
-//--** In between here, you should state where you application can be found now that its running. ie. urls
-//--** Sample usage of the application
-//--** Suggestions for what changes the reader can make to explore the code
+Similar to the `artists` query, this request also contains an error object for the unknown artist "Unknown", and results
+for the other artists with different fields in each object.
+
+Run the `addArtist` mutation to add a new artist to `ArtistService`.
+Attempting to add an artist whose name already exists in the service results in an error.
+Since all attributes of the `Artist` and `Album` classes are annotated with `@NotNull`, omitting a field or setting it
+to `null` in the input `artist` for the following mutation will also result in an error.
+
+[role='command']
+----
+mutation {
+  addArtist(artist: {
+    name: "Adele",
+    genres: "Pop",
+    albums: [
+      {
+        title: "19"
+        ntracks: 12
+        year: "2008"
+      },
+      {
+        title: "21"
+        ntracks: 11
+        year: "2011"
+      },
+      {
+        title: "25"
+        ntracks: 11
+        year: "2015"
+      }
+    ]
+  })
+}
+----
 
 
 == Testing the application
 
-//--** Show how to test your application.
+You can test this service manually by starting a server and pointing a web browser at the
+{graphiql-url}[{graphiql-url}^] URL.
+Automated tests are a much better approach because they trigger a failure if a change introduces a bug.
+JUnit and the SmallRye GraphQL Client provide a simple environment to test the application.
 
-// EXAMPLE:
-// ======================================================================================================
+=== Creating the GraphQL API client interface
+
+The GraphQL Client API and its implementation are included as dependencies specified in your `pom.xml` file.
+Look for the dependences with the `smallrye-graphql-client-api` and `smallrye-graphql-client` artifact IDs.
+
+These dependencies provides the library that is required to implement the GraphQL Rest Client interface.
+
+The GraphQL client API uses template interface to describe the remote service that you want to access.
+The interface defines the queries and mutations to access as a method by mapping its annotations, return type and list
+of arguments.
+
+Since GraphQL requires that the required fields for an entity be sent with the query, the GraphQL client derives the
+required fields from the attributes of the return type.
+If the GraphQL client interface has a method annotated with `@Query` that maps the `artist` query and returns an
+instance of the `Artist` class, the following query is requested from the GraphQL API:
+
+[role='no_copy']
+----
+query {
+  artist(name: ...) {
+    name
+    genres
+    albums {
+      title
+      ntracks
+      year
+    }
+  }
+}
+----
+
+For the GraphQL client to query an artist with the `albumCount` field, you need to create a class that extends the
+`Artist` class and contains the `albumCount` attribute.
 
 [role="code_command hotspot", subs="quotes"]
 ----
-#Create the `TodoIT` class.#
-`finish/src/test/java/it/io/openliberty/guides/todo/TodoIT.java`
+#Create the `ArtistWithAlbumCount` class.#
+`src/test/java/io/openliberty/guides/graphql/client/models/ArtistService.java`
 ----
 
-TodoIT.java
-[source, Java, linenums, indent=0, role="code_column hide_tags=copyright"]
+The `albumCount` attribute extends the `Artist` class and contains the attribute `albumCount` that is annotated with
+`@NotNull`.
+If the GraphQL client interface has a method annotated with `@Query` that returns an instance of the
+`ArtistWithAlbumCount` class, the following fields are requested from the GraphQL API:
+
+[role='no_copy']
 ----
-link:finish/src/test/java/it/io/openliberty/guides/todolistSample/TodoIT.java[]
+query {
+  artist(name: ...) {
+    name
+    genres
+    albumCount
+    albums {
+      title
+      ntracks
+      year
+    }
+  }
+}
 ----
 
-* Explain what each [hotspot=13-20]`@Test` test case is testing
-* Explain key methods
-// ======================================================================================================
+If you require a different subset of fields from the artist entity, you should create another class that maps to the
+required fields.
 
-//--** Include this for info on how to run the tests
+Next, create a GraphQL client interface for the system service.
+Write a template interface that maps the API of the artist service.
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistServiceAPI` class.#
+`src/test/java/io/openliberty/graphql/client/ArtistServiceAPI.java`
+----
+
+The `ArtistServiceAPI` interface contains two methods annotated with `@Mutation`, the `addArtist()` method that maps
+to the `addArtist` mutation and the `reset()` method that maps to the `reset` mutation.
+The interface contains four methods annotated with `@Query`. The `artist` query is modeled by the `getArtist()` method
+which returns an artist object that does not contain the `albumCount` field, and the `getArtistWithAlbumCount()` method
+which returns an artist object that contains the `albumCount` field. Similarly, the `artists` query is modeled by
+the `getArtists()` method and the `getArtistsWithAlbumCount()` method. The `getArtists()` method returns artist objects
+that do not contain the `albumCount` field and the `getArtistsWithAlbumCount()` method returns artist objects that
+contain the `albumCount` field.
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::src/test/java/io/openliberty/guides/graphql/client/models/ArtistWithAlbumCount.java[]
+----
+
+ArtistServiceAPI.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::src/test/java/io/openliberty/guides/graphql/client/ArtistServiceAPI.java[]
+----
+
+=== Creating the test class
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistServiceIT` class.#
+`src/test/java/io/openliberty/graphql/ArtistServiceIT.java`
+----
+
+
+
+ArtistServiceIT.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::src/test/java/io/openliberty/guides/graphql/ArtistServiceIT.java[]
+----
+
 [role='command']
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-test.adoc[]
 
-//--** Including a listing block with test results here
-//--** Show console output of the test results
-
-//--** OPTIONAL: after listing the test results, mention a simple change a user can make/introduce that
-//--** will cause the tests to fail. Be brief and don't give the users all of the instructions.
-//--** At this point, they should be comfortable enough to figure it out on their own.
-
-//--** Include this for info on how to quit development mode
 [role='command']
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-quit.adoc[]
 

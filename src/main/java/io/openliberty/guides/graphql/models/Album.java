@@ -50,13 +50,14 @@ public class Album {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (!(o instanceof Album)) return false;
 
         Album album = (Album) o;
 
         if (getTrackCount() != album.getTrackCount()) return false;
         if (!getTitle().equals(album.getTitle())) return false;
         return getYear().equals(album.getYear());
+
     }
 
     @Override

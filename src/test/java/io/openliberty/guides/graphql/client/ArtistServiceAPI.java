@@ -18,14 +18,14 @@ public interface ArtistServiceAPI {
     ArtistWithAlbumCount getArtistWithAlbumCount(@Name("name") String artistName);
 
     @Query("artists")
-    List<Artist> getArtists(@Name("artists") List<String> artistNames);
+    List<Artist> getArtists(@Name("names") List<String> artistNames);
 
     @Query("artists")
-    List<ArtistWithAlbumCount> getArtistsWithAlbumCounts(@Name("artists") List<String> artistNames);
+    List<ArtistWithAlbumCount> getArtistsWithAlbumCounts(@Name("names") List<String> artistNames);
 
     @Mutation("addArtist")
     boolean addArtist(@Name("artist") Artist artist);
 
-    @Mutation
+    @Mutation("reset")
     int reset();
 }
