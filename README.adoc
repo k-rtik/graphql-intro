@@ -483,7 +483,30 @@ include::src/test/java/io/openliberty/guides/graphql/client/ArtistServiceAPI.jav
 `src/test/java/io/openliberty/graphql/ArtistServiceIT.java`
 ----
 
+The `verifyArtist()` and `verifyAlbums()` helper methods test the equality of the expected `Artist` and `Album` objects
+and the objects returned by the GraphQL API.
+The test methods, annotated with `@Test`, use the GraphQL client to test a query/mutation in the GraphQL API.
+The `setupClientAndArtists()` method resets the `ArtistService` service, gets the expected `Artist` and `Album` objects
+and builds the GraphQL client. This method is executed once before running the tests.
 
+The `testGetArtist()` test method executes the `artist` query on a single artist and verifies that the correct object
+is returned.
+
+The `testGetUnknownArtist()` test method executes the `artist` query on a nonexistent artist and verifies that a
+`GraphQLException` is triggered.
+
+The `testGetArtists()` test method executes the `artists` query and verifies that all the returned objects are correct.
+
+The `testGetArtistWithAlbumCount()` test method executes the `artist` query. The query is requested with the `albumCount`
+field by using the `getArtistWithAlbumCount()`  method in the client which returns an `ArtistWithAlbumCount` object.
+This test method verifies that the correct object is returned and that the object has the correct album count.
+
+The `testAddArtistMutation()` test method executes the `addArtist` mutation to add a new artist to the service.
+It uses the `artist` query to request the newly added artist and verifies that the correct artist object is returned,
+with the correct value for `albumCount`.
+
+The `testResetMutation()` test method executes the `reset` mutation and verifies that the number of deleted artists
+from the service is 1, since we added one new artist to the service.
 
 ArtistServiceIT.java
 [source,java,linenums,role='code_column hide_tags=comment']
@@ -497,18 +520,11 @@ link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-
 [role='command']
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-quit.adoc[]
 
-
 == Great work! You're done!
 
-//--** Briefly summarize what the user achieved in this guide (1-2 sentences).
-EXAMPLE: You have just completed building a simple todo list application using JAXRS and CDI services in Open Liberty.
+EXAMPLE: You have just completed building a simple artist management application using MicroProfile GraphQL and
+GraphQL client in Open Liberty.
 
-//--** OPTIONAL: briefly state what the user could do next now that they've learned the
-//--** technologies in this guide.
-
-//--** Include the below from the guides-common repo to tell users how they can contribute to the guide
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/attribution.adoc[]
 
-//--** DO NO CREATE ANYMORE SECTIONS AT THIS POINT
-//--** Related guides will be added in automatically here if you included them in ":page-related-guides"
 // ------------ END ------------

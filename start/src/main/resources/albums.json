@@ -1,0 +1,80 @@
+[
+  {
+    "title": "Billie Holiday Sings",
+    "year": "1952",
+    "ntracks": 8,
+    "artistName": "Billie Holiday"
+  },
+  {
+    "title": "Body and Soul",
+    "year": "1957",
+    "ntracks": 8,
+    "artistName": "Billie Holiday"
+  },
+  {
+    "title": "Last Recording",
+    "year": "1959",
+    "ntracks": 12,
+    "artistName": "Billie Holiday"
+  },
+  {
+    "title": "With the Beatles",
+    "year": "1963",
+    "ntracks": 14,
+    "artistName": "The Beatles"
+  },
+  {
+    "title": "Abbey Road",
+    "year": "1969",
+    "ntracks": 17,
+    "artistName": "The Beatles"
+  },
+  {
+    "title": "Let It Be",
+    "year": "1969",
+    "ntracks": 12,
+    "artistName": "The Beatles"
+  },
+  {
+    "title": "Music of the Sun",
+    "year": "2005",
+    "ntracks": 13,
+    "artistName": "Rihanna"
+  },
+  {
+    "title": "Anti",
+    "year": "2016",
+    "ntracks": 13,
+    "artistName": "Rihanna"
+  },
+  {
+    "title": "Thank Me Later",
+    "year": "2010",
+    "ntracks": 14,
+    "artistName": "Drake"
+  },
+  {
+    "title": "Take Care",
+    "year": "2011",
+    "ntracks": 18,
+    "artistName": "Drake"
+  },
+  {
+    "title": "Nothing Was the Same",
+    "year": "2013",
+    "ntracks": 13,
+    "artistName": "Drake"
+  },
+  {
+    "title": "Views",
+    "year": "2016",
+    "ntracks": 20,
+    "artistName": "Drake"
+  },
+  {
+    "title": "Scorpion",
+    "year": "2018",
+    "ntracks": 25,
+    "artistName": "Drake"
+  }
+]

@@ -24,16 +24,12 @@ public class ArtistServiceIT {
     @BeforeAll
     public static void setupClientAndArtists() {
 
-        System.out.println("Hi");
-
         artistServiceAPI = GraphQlClientBuilder
                 .newBuilder()
                 .endpoint("http://localhost:9080/api/graphql")
                 .build(ArtistServiceAPI.class);
 
-        System.out.println("Hello");
         artistServiceAPI.reset();
-        System.out.println("Boom");
 
         expectedArtistMap = JsonService.getArtists();
         expectedAlbumsMap = JsonService.getAlbums();
@@ -57,9 +53,15 @@ public class ArtistServiceIT {
     @Test
     @Order(3)
     public void testGetArtists() {
-        List<Artist> artists = artistServiceAPI.getArtists(
-                Arrays.asList("Drake", "The Beatles", "Billie Holiday"));
+        List<String> expectedArtistNames = Arrays.asList("Drake", "The Beatles", "Billie Holiday");
+        List<Artist> artists = artistServiceAPI.getArtists(expectedArtistNames);
+        Assertions.assertEquals(3, artists.size(),
+                "Expected three artists to be returned, got " + artists.size());
         for (Artist artist: artists) {
+            if (!expectedArtistNames.remove(artist.getName())) {
+                Assertions.fail("Artist name " + artist.getName() + " not found in the list: " +
+                        expectedArtistNames.toString());
+            }
             verifyArtist(artist, expectedArtistMap.get(artist.getName()));
             verifyAlbums(artist, expectedAlbumsMap.get(artist.getName()));
         }

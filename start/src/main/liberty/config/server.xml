@@ -1,0 +1,17 @@
+
+<server>
+    <featureManager>
+        <feature>mpGraphQL-1.0</feature>
+        <feature>jsp-2.3</feature>
+        <feature>jsonb-1.0</feature>
+        <feature>json-1.0</feature>
+        <feature>cdi-2.0</feature>
+    </featureManager>
+
+    <httpEndpoint id="defaultHttpEndpoint"
+                  httpPort="${default.http.port}"
+                  httpsPort="${default.https.port}"
+                  host="*" />
+
+    <webApplication location="graphql-intro.war" contextRoot="api"/>
+</server>
