@@ -1,0 +1,663 @@
+// Copyright (c) 2020 IBM Corporation and others.
+// Licensed under Creative Commons Attribution-NoDerivatives
+// 4.0 International (CC BY-ND 4.0)
+//   https://creativecommons.org/licenses/by-nd/4.0/
+//
+// Contributors:
+//     IBM Corporation
+//
+:page-layout: guide-multipane
+:projectid: graphql-intro
+:page-duration: 15 minutes
+:page-releasedate: 2020-06-17
+:page-description: Learn how to create and test a GraphQL service using MicroProfile GraphQL and Open Liberty.
+:guide-author: Open Liberty
+:page-related-guides: ['cdi-intro', 'rest-intro']
+:page-guide-category: microprofile
+:page-essential: false
+:page-permalink: /guides/{projectid}
+:common-includes: ../guides-common/
+:imagesdir: /img/guide/{projectid}
+:page-seo-title: Creating a GraphQL service and GrahQL client
+:page-seo-description: Find out how to create and test a GraphQL service on Open Liberty
+= Creating and consuming a GraphQL web service
+
+[.hidden]
+NOTE: This repository contains the guide documentation source. To view the guide in published form,
+view it on the https://openliberty.io/guides/{projectid}.html[Open Liberty website].
+
+Explore how to create a GraphQL web service and consume a GraphQL web service using template interfaces.
+
+:graphiql-url: http://localhost:9080/api/graphiql.html
+:schema-url: http://localhost:9080/api/graphql/schema.graphql
+
+== What you'll learn
+
+You'll learn how to create and test a microservice using MicroProfile GraphQL and Open Liberty.
+You'll use Maven throughout the guide to build the microservice and deploy it
+to run on the Open Liberty application server.
+
+=== What is GraphQL
+GraphQL is an open-source data query and manipulation language for APIs, and a runtime for fulfilling these queries with
+existing data.
+
+GraphQL queries specify the shape of the response data, which allows users to get exactly what data they want.
+GraphQL APIs contain a single endpoint that handles queries. GraphQL APIs are defined by Types and Fields as opposed
+to being defined by endpoints like REST APIs. This enables GraphQL APIs to operate on multiple resources in the single
+query where REST APIs would require loading the data from multiple URLs.
+
+You will create a GraphQL web service that queries, manipulates and stores album and artist information.
+The artist and album resources are provided in JSON files.
+
+///////////////////////////
+// Getting started
+///////////////////////////
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/gitclone.adoc[]
+
+///////////////////////////
+// Try what you’ll build
+///////////////////////////
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-intro.adoc[]
+
+//--** Describe what user should run and expect to see after running the complete version of the application.
+You are provided with Graphiql, an interactive in-browser GraphQL IDE, which is served by the Open Liberty server.
+You can use Graphiql to perform queries in with an interactive interface to assist in development and testing of the API.
+
+Once the server is running, access {graphiql-url}[{graphiql-url}^].
+Run the following query to get the artist data for Drake:
+
+[role='command']
+----
+query {
+    artist(artist: "Drake") {
+        name
+        genres
+        albums {
+            title
+            year
+            ntracks
+        }
+    }
+}
+----
+
+Run the following query to request only the `name` and `genres` field of artists Drake and Rihanna.
+
+[role='command']
+----
+query {
+  artists(artists: ["Drake", "Rihanna"]) {
+    name
+    genres
+  }
+}
+----
+
+Run the following query to add a new artist to the service:
+
+[role='command']
+----
+mutation {
+  addArtist(artist: {
+    name: "Elvis Presley",
+    genres: "Rock and Roll",
+    albums: [
+      {
+        title: "Elvis Presley"
+        ntracks: 12
+        year: "1956"
+      }
+    ]
+  })
+}
+----
+
+Access {schema-url}[{schema-url}^] to view the API schema.
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
+
+/////////////////////////////
+//== Building the application
+/////////////////////////////
+
+Navigate to the `start` directory
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-start.adoc[]
+
+=== Enabling GraphQL
+
+The MicroProfile GraphQL feature enables GraphQL support for your application.
+This feature is already enabled in the [hotspot=graphQLFeature]`configuration file`.
+
+ArtistService.java
+[source,xml,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/liberty/config/server.xml[]
+----
+
+=== Creating the GraphQL API
+
+In GraphQL, a single class should represent a single resource, or a group of resources of the same type.
+In this application, artists and albums are the two resources. Since the two resources are related, they can be
+represented by a single class.
+
+The `start` folder already contains the data files, [hotspot file=2]`artists.json` and [hotspot file=3]`albums.json`,
+and their respective model classes, [hotspot file=4]`Album` and [hotspot file=5]`Artist`.
+The `start` folder also contains [hotspot file=1]`JsonService`, a static class to deserialize the artist and album data from data files
+into the model classes.
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistService` class.#
+`src/main/java/io/openliberty/guides/graphql/ArtistService.java`
+----
+
+The [hotspot=graphQLApi file=0]`@GraphQLApi` annotation indicates that `ArtistService` is a GraphQL endpoint.
+Methods in this class can define GraphQL queries and annotations.
+
+Entities are the objects used in GraphQL. An entity is created in the schema from a custom Java class when the class is
+used as the return type or argument of a query or mutation method, or the return type of a method that has a
+`@Source` annotation applied on an argument.
+
+Queries are GraphQL requests that request all or specific fields of an object.
+A GraphQL query is created in the schema for any method in `ArtistService` annotated with
+[hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query`.
+The value parameter of the [hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query` annotation
+is used for the name of the GraphQL query.
+If the value parameter is not provided, the method's name is used as the query's name.
+
+Mutations are GraphQL requests that modify a resource.
+A GraphQL mutation is created in the schema for any method in `ArtistService` annotated with
+[hotspot=mutationAnnotationAddArtist hotspot=mutationAnnotationReset file=0]`@Mutation`.
+Similar to [hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query`, the value parameter of
+the [hotspot=mutationAnnotationAddArtist hotspot=mutationAnnotationReset file=0]`@Mutation` annotation is used for the
+name of the GraphQL mutation.
+If the value parameter is not provided, the method's name is used as the query's name.
+
+The value parameter of the
+[hotspot=nameAnnotationGetArtist hotspot=nameAnnotationGetArtists hotspot=nameAnnotationAddArtist file=0]`@Name` annotation
+is used for the name of the GraphQL query or mutation parameter.
+If the value parameter is not provided, the method argument's name is used as the the query parameter's name.
+
+The [hotspot=nameAnnotationAlbum file=5]`@Name` annotation can also be used to change the name of an attribute used in a
+class that represents a GraphQL entity.
+The value parameter of the [hotspot=nameAnnotationAlbum file=5]`@Name` annotation is used for the field name in the
+corresponding GraphQL entity.
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+JsonService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/JsonService.java[]
+----
+
+artists.json
+[source,json,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/resources/artists.json[]
+----
+
+albums.json
+[source,json,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/resources/albums.json[]
+----
+
+Artist.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
+----
+
+Album.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
+----
+
+=== Queries
+
+The `ArtistService` class contains two queries, [hotspot=queryAnnotationGetArtist]`artist` and
+[hotspot=queryAnnotationGetArtists]`artists`.
+
+The [hotspot=getArtist]`getArtist()` method implements the [hotspot=queryAnnotationGetArtist file=0]`artist`
+query, which retrieves the artist corresponding to the name supplied by the argument
+[hotspot=nameAnnotationGetArtist]`name`.
+When an artist is not found, a [hotspot=graphQlExceptionGetArtist]`GraphQLException` is thrown, which returns
+an `error` object to the client.
+
+The [hotspot=getArtists]`getArtists()` method implements the [hotspot=queryAnnotationGetArtists]`artists`
+query, which retrieves a list of artists corresponding to the list of artist names supplied by the
+[hotspot=nameAnnotationGetArtists]`names` argument.
+When artists in the list of names are not found, a [hotspot=graphQlExceptionGetArtists]`GraphQLException`
+is thrown, which returns an `error` object containing the missing names to the client.
+
+The [hotspot=getArtists]`getArtists()` method gets all possible results instead of throwing a `GraphQLException`
+on the first unknown artist.
+Since GraphQL handles partial results when an error occurs, the found artist objects are returned to the client
+alongside the error when [hotspot=graphQlExceptionGetArtists]`GraphQLException` is thrown.
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+=== Mutations
+
+The `ArtistService` class contains two mutations,
+[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` and
+[hotspot=mutationAnnotationReset hotspot=methodSignatureReset file=0]`reset`.
+
+The [hotspot=addArtist file=0]`addArtist()` method implements the
+[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` mutation, which adds a new artist
+to the service.
+If an artist with the same name already exists in the service, the [hotspot=addArtist file=0]`addArtist()` method throws
+a [hotspot=graphQlExceptionArtistExists hotspot=graphQlExceptionAddArtist file=0]`GraphQLException`.
+
+The artist to add to the service is passed to the
+[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` query through the
+[hotspot=nameAnnotationAddArtist file=0]`artist` argument.
+When the entity passed to the artist parameter does not contain an attribute in the [hotspot=attributes file=1]`Artist`
+or [hotspot=attributes file=2]`Album` class
+the value is set as `null`.
+
+When the `@NotNull` annotation is used on an attribute in the [hotspot=notNull file=1]`Artist` and
+[hotspot=notNull file=2]`Album` class, an error is thrown when the entity passed to the
+[hotspot=nameAnnotationAddArtist file=0]`artist` parameter of
+[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` does not contain that field or
+if the value of the field is `null`.
+
+The [hotspot=reset file=0]`reset()` method implements the
+[hotspot=mutationAnnotationReset hotspot=methodSignatureReset file=0]`reset` mutation, which resets the data handled by
+the service to the data deserialized from the JSON data files.
+This method returns the number of artists removed from the service when the data is reset.
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+Artist.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
+----
+
+Album.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
+----
+
+=== Extending the Artist entity
+
+The [hotspot=signatureAlbumCount]`artist` argument (of type `Artist`) of  the
+[hotspot=albumCount]`albumCount()` method is annotated with [hotspot=signatureAlbumCount]`@Source`.
+Since the type `Artist` is returned by a GraphQL query, the [hotspot=signatureAlbumCount]`@Source` annotation
+adds the name of the method, `albumCount` as a property to the `Artist` GraphQL entity.
+
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+== Running the application
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
+
+Access {schema-url}[{schema-url}^] to view the API schema.
+
+The schema for this API looks like:
+
+[role='no_copy']
+----
+type Album {
+  ntracks: Int!
+  title: String!
+  year: String!
+}
+
+type Artist {
+  albumCount: Int!
+  albums: [Album]
+  genres: String!
+  name: String!
+}
+
+"Mutation root"
+type Mutation {
+  addArtist(artist: ArtistInput): Boolean!
+  reset: Int!
+}
+
+"Query root"
+type Query {
+  artist(name: String): Artist
+  artists(artists: [String]): [Artist]
+}
+
+input AlbumInput {
+  ntracks: Int!
+  title: String!
+  year: String!
+}
+
+input ArtistInput {
+  albums: [AlbumInput]
+  genres: String!
+  name: String!
+}
+----
+
+The `!` in the schema indicates that the field of an entity (type or input), or the return value of a mutation, is
+not `null`.
+
+Notice that the schema lists `albumCount: Int!` as part of the type Artist, but `albumCount` is not an attribute of the
+ [hotspot=attributes file=1]`Artist` class.
+The [hotspot=signatureAlbumCount file=0]`@Source` annotation applied on the [hotspot=signatureAlbumCount file=0]`artist`
+argument of [hotspot=albumCount file=0]`albumCount()` associates the return value of the method, an integer, to the
+`albumCount` field of the GraphQL type Artist.
+
+Access {graphiql-url}[{graphiql-url}^] to open Graphiql.
+
+When you run a GraphQL query, you are required to specify the properties you want for an entity. The result object
+has only the specified properties.
+
+Run the following query to request the name and number of albums of The Beatles stored in `ArtistService`,
+and the titles of their albums:
+
+[role='command']
+----
+query {
+  artist(name: "The Beatles") {
+    name
+    albumCount
+    albums {
+      title
+    }
+  }
+}
+----
+
+Run the following query to request the name and title of albums of multiple artists, including an artist that does not
+exist:
+
+[role='command']
+----
+query {
+  artists(names: ["Unknown", "Billie Holiday"]) {
+    name
+    albums {
+      title
+    }
+  }
+}
+----
+
+Notice that the result of the query contains both the error for the unknown artist and the partial results for the
+query, which contains the artist objects for the artists that exist.
+
+The above query can only get the same fields from multiple artist entities. Since GraphQL can support multiple queries
+in a single request, you can get different fields for multiple artist entities by running the following request:
+
+[role='command']
+----
+query {
+  BillieHoliday: artist(name: "Billie Holiday") {
+    name
+    genres
+  }
+  Unknown: artist(name: "Unknown") {
+    name
+  }
+  Drake: artist(name: "Drake") {
+    name
+    albumCount
+  }
+}
+----
+
+Similar to the [hotspot=getArtists file=0]`artists` query, this request also contains an error object for the unknown
+artist "Unknown", and results for the other artists with different fields in each object.
+
+Run the [hotspot=addArtist file=0]`addArtist` mutation to add a new artist to `ArtistService`.
+Attempting to add an artist whose name already exists in the service results in an error.
+Since all attributes of the [hotspot=notNull file=1]`Artist` and [hotspot=notNull file=2]`Album` classes are annotated
+with `@NotNull`, omitting a field or setting it to `null` in the input `artist` for the following mutation will also
+result in an error.
+
+[role='command']
+----
+mutation {
+  addArtist(artist: {
+    name: "Adele",
+    genres: "Pop",
+    albums: [
+      {
+        title: "19"
+        ntracks: 12
+        year: "2008"
+      },
+      {
+        title: "21"
+        ntracks: 11
+        year: "2011"
+      },
+      {
+        title: "25"
+        ntracks: 11
+        year: "2015"
+      }
+    ]
+  })
+}
+----
+
+ArtistService.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
+----
+
+Artist.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
+----
+
+Album.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
+----
+
+== Testing the application
+
+You can test this service manually by starting a server and pointing a web browser at the
+{graphiql-url}[{graphiql-url}^] URL.
+Automated tests are a much better approach because they trigger a failure if a change introduces a bug.
+JUnit and the SmallRye GraphQL Client provide a simple environment to test the application.
+
+=== Creating the GraphQL API client interface
+
+The GraphQL Client API and its implementation are included as dependencies specified in your
+[hotspot=clientDependencies file=2]`pom.xml` file.
+Look for the dependencies with the [hotspot=graphQlClientApiDependency file=2]`smallrye-graphql-client-api` and
+[hotspot=graphQlClientDependency file=2]`smallrye-graphql-client` artifact IDs.
+
+These dependencies provides the library that is required to implement the GraphQL Rest Client interface.
+
+The GraphQL client API uses template interface to describe the remote service that you want to access.
+The interface defines the queries and mutations to access as a method by mapping its annotations, return type and list
+of arguments.
+
+Since GraphQL requires that the required fields for an entity be sent with the query, the GraphQL client derives the
+required fields from the attributes of the return type.
+If the GraphQL client interface has a method annotated with `@Query` that maps the `artist` query and returns an
+instance of the `Artist` class, the following query is requested from the GraphQL API:
+
+[role='no_copy']
+----
+query {
+  artist(name: ...) {
+    name
+    genres
+    albums {
+      title
+      ntracks
+      year
+    }
+  }
+}
+----
+
+For the GraphQL client to query an artist with the `albumCount` field, you need to create a class that extends the
+`Artist` class and contains the `albumCount` attribute.
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistWithAlbumCount` class.#
+`src/test/java/io/openliberty/guides/graphql/client/models/ArtistService.java`
+----
+
+The [hotspot=artistWithAlbumCount file=0]`ArtistWithAlbumCount` class extends the [hotspot=extends file=0]`Artist` class
+and contains the attribute [hotspot=albumCount file=0]`albumCount` that is annotated with
+[hotspot=albumCount file=0]`@NotNull`.
+If the GraphQL client interface has a method annotated with `@Query` that returns an instance of the
+`ArtistWithAlbumCount` class, the following fields are requested from the GraphQL API:
+
+[role='no_copy']
+----
+query {
+  artist(name: ...) {
+    name
+    genres
+    albumCount
+    albums {
+      title
+      ntracks
+      year
+    }
+  }
+}
+----
+
+If you require a different subset of fields from the artist entity, you should create another class that maps to the
+required fields.
+
+Next, create a GraphQL client interface for the system service.
+Write a template interface that maps the API of the artist service.
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistServiceAPI` class.#
+`src/test/java/io/openliberty/graphql/client/ArtistServiceAPI.java`
+----
+
+The [hotspot=artistServiceApi file=1]`ArtistServiceAPI` interface contains two methods annotated with
+`@Mutation`, the [hotspot=addArtist file=1]`addArtist()` method that maps to the `addArtist` mutation and the
+[hotspot=reset file=1]`reset()` method that maps to the `reset` mutation.
+
+The [hotspot=artistServiceApi file=1]`interface` contains four methods annotated with `@Query`.
+The `artist` query is modeled by the [hotspot=getArtist file=1]`getArtist()` method which returns an artist object that
+does not contain the `albumCount` field, and the [hotspot=getArtistWithAlbumCount file=1]`getArtistWithAlbumCount()` method
+which returns an artist object that contains the `albumCount` field. Similarly, the `artists` query is modeled by
+the [hotspot=getArtists file=1]`getArtists()` method and the
+[hotspot=getArtistsWithAlbumCount file=1]`getArtistsWithAlbumCount()` method.
+The [hotspot=getArtists file=1]`getArtists()` method returns artist objects that do not contain the `albumCount` field
+and the [hotspot=getArtistsWithAlbumCount file=1]`getArtistsWithAlbumCount()` method returns artist objects that
+contain the `albumCount` field.
+
+ArtistWithAlbumCount.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/test/java/io/openliberty/guides/graphql/client/models/ArtistWithAlbumCount.java[]
+----
+
+ArtistServiceAPI.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/test/java/io/openliberty/guides/graphql/client/ArtistServiceAPI.java[]
+----
+
+pom.xml
+[source,xml,linenums,role='code_column hide_tags=comment']
+----
+include::finish/pom.xml[]
+----
+
+=== Creating the test class
+
+[role="code_command hotspot", subs="quotes"]
+----
+#Create the `ArtistServiceIT` class.#
+`src/test/java/io/openliberty/graphql/ArtistServiceIT.java`
+----
+
+The [hotspot=verifyArtist]`verifyArtist()` and [hotspot=verifyAlbums]`verifyAlbums()` helper methods test the equality
+of the expected `Artist` and `Album` objects and the objects returned by the GraphQL API.
+The test methods, annotated with
+[hotspot=testAnnotationTestGetArtist hotspot=testAnnotationTestGetUnknownArtist hotspot=testAnnotationTestGetArtists hotspot=testAnnotationTestGetArtistWithAlbumCount hotspot=testAnnotationTestAddArtistMutation hotspot=testAnnotationTestResetMutation]`@Test`,
+use the GraphQL client to test a query/mutation in the GraphQL API.
+The [hotspot=setupClientAndArtists]`setupClientAndArtists()` method resets the `ArtistService` service, gets the expected
+`Artist` and `Album` objects and builds the GraphQL client.
+This method is executed once before running the tests.
+
+The [hotspot=getArtist]`testGetArtist()` test method executes the `artist` query on a single artist and verifies that
+the correct object is returned.
+
+The [hotspot=getUnknownArtist]`testGetUnknownArtist()` test method executes the `artist` query on a nonexistent artist
+and verifies that a `GraphQLException` is triggered.
+
+The [hotspot=getArtists]`testGetArtists()` test method executes the `artists` query and verifies that all the returned
+objects are correct.
+
+The [hotspot=getArtistWithAlbumCount]`testGetArtistWithAlbumCount()` test method executes the `artist` query. The query
+is requested with the `albumCount` field by using the `getArtistWithAlbumCount()` method in the client which returns an
+`ArtistWithAlbumCount` object.
+This test method verifies that the correct object is returned and that the object has the correct album count.
+
+The [hotspot=addArtistMutation]`testAddArtistMutation()` test method executes the `addArtist` mutation to add a new artist
+to the service.
+It uses the `artist` query to request the newly added artist and verifies that the correct artist object is returned,
+with the correct value for `albumCount`.
+
+The [hotspot=resetMutation]`testResetMutation()` test method executes the `reset` mutation and verifies that the number
+of deleted artists from the service is 1, since we added one new artist to the service.
+
+ArtistServiceIT.java
+[source,java,linenums,role='code_column hide_tags=comment']
+----
+include::finish/src/test/java/io/openliberty/guides/graphql/ArtistServiceIT.java[]
+----
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-test.adoc[]
+
+[role='command']
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-quit.adoc[]
+
+== Great work! You're done!
+
+EXAMPLE: You have just completed building a simple artist management application using MicroProfile GraphQL and
+GraphQL client in Open Liberty.
+
+link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/attribution.adoc[]
+
+// ------------ END ------------
