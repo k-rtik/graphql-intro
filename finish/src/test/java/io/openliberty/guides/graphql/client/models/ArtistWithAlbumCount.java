@@ -6,9 +6,14 @@ import io.openliberty.guides.graphql.models.Artist;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 
+// tag::artistWithAlbumCount[]
+// tag::extends[]
 public class ArtistWithAlbumCount extends Artist {
+// end::extends[]
+    // tag::albumCount[]
     @NotNull
     private int albumCount;
+    // end::albumCount[]
 
     public ArtistWithAlbumCount() {}
 
@@ -25,3 +30,4 @@ public class ArtistWithAlbumCount extends Artist {
         this.albumCount = albumCount;
     }
 }
+// end::artistWithAlbumCount[]

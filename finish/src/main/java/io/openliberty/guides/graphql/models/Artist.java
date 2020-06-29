@@ -5,11 +5,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Artist {
+    // tag::attributes[]
+    // tag::notNull[]
     @NotNull
     private String name;
+    // end::notNull[]
+    // tag::notNull[]
     @NotNull
     private String genres;
+    // end::notNull[]
     private List<Album> albums;
+    // end::attributes[]
 
     public Artist() {}
 

@@ -6,13 +6,19 @@ import javax.json.bind.annotation.JsonbProperty;
 import javax.validation.constraints.NotNull;
 
 public class Album {
+    // tag::attributes[]
+    // tag::notNull[]
     @NotNull
     private String title;
     @NotNull
     private String year;
     @NotNull
+    // tag::nameAnnotationAlbum[]
     @Name("ntracks")
+    // end::nameAnnotationAlbum[]
     private int trackCount;
+    // end::notNull[]
+    // end::attributes[]
 
     public Album() {}
 

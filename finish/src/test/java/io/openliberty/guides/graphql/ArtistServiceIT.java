@@ -21,6 +21,7 @@ public class ArtistServiceIT {
     private static Map<String, Artist> expectedArtistMap;
     private static Map<String, List<Album>> expectedAlbumsMap;
 
+    // tag::setupClientAndArtists[]
     @BeforeAll
     public static void setupClientAndArtists() {
 
@@ -34,23 +35,35 @@ public class ArtistServiceIT {
         expectedArtistMap = JsonService.getArtists();
         expectedAlbumsMap = JsonService.getAlbums();
     }
+    // end::setupClientAndArtists[]
 
+    // tag::getArtist[]
+    // tag::testAnnotationTestGetArtist[]
     @Test
+    // end::testAnnotationTestGetArtist[]
     @Order(1)
     public void testGetArtist() {
         Artist drake = artistServiceAPI.getArtist("Drake");
         verifyArtist(drake, expectedArtistMap.get("Drake"));
         verifyAlbums(drake, expectedAlbumsMap.get("Drake"));
     }
+    // end::getArtist[]
 
+    // tag::getUnknownArtist[]
+    // tag::testAnnotationTestGetUnknownArtist[]
     @Test
+    // end::testAnnotationTestGetUnknownArtist[]
     @Order(2)
     public void testGetUnknownArtist() {
         Assertions.assertThrows(GraphQlClientException.class, () ->
                 artistServiceAPI.getArtist("UnknownArtist"));
     }
+    // tag::getUnknownArtist[]
 
+    // tag::getArtists[]
+    // tag::testAnnotationTestGetArtists[]
     @Test
+    // end::testAnnotationTestGetArtists[]
     @Order(3)
     public void testGetArtists() {
         List<String> expectedArtistNames = Arrays.asList("Drake", "The Beatles", "Billie Holiday");
@@ -66,16 +79,24 @@ public class ArtistServiceIT {
             verifyAlbums(artist, expectedAlbumsMap.get(artist.getName()));
         }
     }
+    // end::getArtists[]
 
+    // tag::getArtistWithAlbumCount[]
+    // tag::testAnnotationTestGetArtistWithAlbumCount[]
     @Test
+    // end::testAnnotationTestGetArtistWithAlbumCount[]
     @Order(4)
     public void testGetArtistWithAlbumCount() {
         ArtistWithAlbumCount rihanna = artistServiceAPI.getArtistWithAlbumCount("Rihanna");
         verifyArtist(rihanna, expectedArtistMap.get("Rihanna"));
         verifyAlbums(rihanna, expectedAlbumsMap.get("Rihanna"));
     }
+    // end::getArtistWithAlbumCount[]
 
+    // tag::addArtistMutation[]
+    // tag::testAnnotationTestAddArtistMutation[]
     @Test
+    //  end::testAnnotationTestAddArtistMutation[]
     @Order(5)
     public void testAddArtistMutation() {
         Artist newArtist = new Artist("New Artist", "Electronic", new ArrayList<>());
@@ -97,21 +118,29 @@ public class ArtistServiceIT {
         Assertions.assertThrows(GraphQlClientException.class, () ->
                 artistServiceAPI.addArtist(newArtist));
     }
+    // end::addArtistMutation[]
 
+    // tag::resetMutation[]
+    // tag::testAnnotationTestResetMutation[]
     @Test
+    // end::testAnnotationTestResetMutation[]
     @Order(6)
     public void testResetMutation() {
         int artistCount = artistServiceAPI.reset();
         Assertions.assertEquals(artistCount, 1);
     }
+    // end::resetMutation[]
 
+    // tag::verifyArtist[]
     private void verifyArtist(Artist actualArtist, Artist expectedArtist) {
         Assertions.assertEquals(expectedArtist.getName(), actualArtist.getName(),
                 "Returned artist does not have the correct name");
         Assertions.assertEquals( expectedArtist.getGenres(), actualArtist.getGenres(),
                 "Returned artist does not have the correct genres");
     }
+    // end::verifyArtist[]
 
+    // tag::verifyAlbums[]
     private void verifyAlbums(Artist actualArtist, List<Album> expectedAlbums) {
         Assertions.assertIterableEquals(expectedAlbums, actualArtist.getAlbums(),
                 "Returned artist does not have the correct albums");
@@ -121,4 +150,5 @@ public class ArtistServiceIT {
                     "Returned artist does not have the correct album count");
         }
     }
+    // end::verifyAlbums[]
 }

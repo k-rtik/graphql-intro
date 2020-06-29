@@ -59,18 +59,24 @@
             <version>5.6.2</version>
             <scope>test</scope>
         </dependency>
+        <!-- tag::clientDependencies[] -->
+        <!-- tag::graphQlClientDependency[] -->
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-client</artifactId>
             <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- end::graphQlClientDependency[] -->
+        <!-- tag::graphQlClientApiDependency[] -->
         <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>smallrye-graphql-client-api</artifactId>
             <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
+        <!-- tag::graphQlClientApiDependency[] -->
+        <!-- end::clientDependencies[] -->
         <dependency>
             <groupId>org.glassfish</groupId>
             <artifactId>javax.json</artifactId>
