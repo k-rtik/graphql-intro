@@ -75,7 +75,7 @@
             <version>1.0.1</version>
             <scope>test</scope>
         </dependency>
-        <!-- tag::graphQlClientApiDependency[] -->
+        <!-- end::graphQlClientApiDependency[] -->
         <!-- end::clientDependencies[] -->
         <dependency>
             <groupId>org.glassfish</groupId>

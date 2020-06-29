@@ -121,8 +121,9 @@ Access {schema-url}[{schema-url}^] to view the API schema.
 [role='command']
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
 
-
-== Building the application
+/////////////////////////////
+//== Building the application
+/////////////////////////////
 
 Navigate to the `start` directory
 
@@ -157,7 +158,7 @@ into the model classes.
 `src/main/java/io/openliberty/guides/graphql/ArtistService.java`
 ----
 
-The [hotspot=GraphQLApi file=0]`@GraphQLApi` annotation indicates that `ArtistService` is a GraphQL endpoint.
+The [hotspot=graphQLApi file=0]`@GraphQLApi` annotation indicates that `ArtistService` is a GraphQL endpoint.
 Methods in this class can define GraphQL queries and annotations.
 
 Entities are the objects used in GraphQL. An entity is created in the schema from a custom Java class when the class is
@@ -315,9 +316,7 @@ ArtistService.java
 include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
 ----
 
-//////////////////////////////////////////
-// Running the application
-//////////////////////////////////////////
+== Running the application
 
 [role='command']
 link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
@@ -370,7 +369,7 @@ The `!` in the schema indicates that the field of an entity (type or input), or 
 not `null`.
 
 Notice that the schema lists `albumCount: Int!` as part of the type Artist, but `albumCount` is not an attribute of the
-[hotspot=attributes file=1]`Artist` class.
+ [hotspot=attributes file=1]`Artist` class.
 The [hotspot=signatureAlbumCount file=0]`@Source` annotation applied on the [hotspot=signatureAlbumCount file=0]`artist`
 argument of [hotspot=albumCount file=0]`albumCount()` associates the return value of the method, an integer, to the
 `albumCount` field of the GraphQL type Artist.

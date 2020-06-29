@@ -1,9 +1,9 @@
 
 <server>
     <featureManager>
-        <!-- tag::graphQLFeature -->
+        <!-- tag::graphQLFeature[] -->
         <feature>mpGraphQL-1.0</feature>
-        <!-- end::graphQLFeature -->
+        <!-- end::graphQLFeature[] -->
         <feature>jsp-2.3</feature>
         <feature>jsonb-1.0</feature>
         <feature>json-1.0</feature>

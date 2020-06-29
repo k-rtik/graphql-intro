@@ -58,7 +58,7 @@ public class ArtistServiceIT {
         Assertions.assertThrows(GraphQlClientException.class, () ->
                 artistServiceAPI.getArtist("UnknownArtist"));
     }
-    // tag::getUnknownArtist[]
+    // end::getUnknownArtist[]
 
     // tag::getArtists[]
     // tag::testAnnotationTestGetArtists[]
@@ -66,14 +66,16 @@ public class ArtistServiceIT {
     // end::testAnnotationTestGetArtists[]
     @Order(3)
     public void testGetArtists() {
-        List<String> expectedArtistNames = Arrays.asList("Drake", "The Beatles", "Billie Holiday");
+        List<String> expectedArtistNames = Arrays
+                .asList("Drake", "The Beatles", "Billie Holiday");
         List<Artist> artists = artistServiceAPI.getArtists(expectedArtistNames);
         Assertions.assertEquals(3, artists.size(),
                 "Expected three artists to be returned, got " + artists.size());
         for (Artist artist: artists) {
             if (!expectedArtistNames.remove(artist.getName())) {
-                Assertions.fail("Artist name " + artist.getName() + " not found in the list: " +
-                        expectedArtistNames.toString());
+                Assertions.fail("Artist name " + artist.getName()
+                        + " not found in the list: "
+                        + expectedArtistNames.toString());
             }
             verifyArtist(artist, expectedArtistMap.get(artist.getName()));
             verifyAlbums(artist, expectedAlbumsMap.get(artist.getName()));
@@ -87,7 +89,8 @@ public class ArtistServiceIT {
     // end::testAnnotationTestGetArtistWithAlbumCount[]
     @Order(4)
     public void testGetArtistWithAlbumCount() {
-        ArtistWithAlbumCount rihanna = artistServiceAPI.getArtistWithAlbumCount("Rihanna");
+        ArtistWithAlbumCount rihanna = artistServiceAPI
+                .getArtistWithAlbumCount("Rihanna");
         verifyArtist(rihanna, expectedArtistMap.get("Rihanna"));
         verifyAlbums(rihanna, expectedAlbumsMap.get("Rihanna"));
     }
@@ -110,8 +113,10 @@ public class ArtistServiceIT {
                 verifyArtist(artistWithAlbumCount, newArtist);
                 verifyAlbums(artistWithAlbumCount, newArtist.getAlbums());
             } else {
-                verifyArtist(artistWithAlbumCount, expectedArtistMap.get(artistWithAlbumCount.getName()));
-                verifyAlbums(artistWithAlbumCount, expectedAlbumsMap.get(artistWithAlbumCount.getName()));
+                verifyArtist(artistWithAlbumCount,
+                        expectedArtistMap.get(artistWithAlbumCount.getName()));
+                verifyAlbums(artistWithAlbumCount,
+                        expectedAlbumsMap.get(artistWithAlbumCount.getName()));
             }
         }
 

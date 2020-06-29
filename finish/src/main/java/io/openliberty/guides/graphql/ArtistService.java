@@ -56,7 +56,8 @@ public class ArtistService {
     @Query("artists")
     // end::queryAnnotationGetArtists[]
     // tag::nameAnnotationGetArtists[]
-    public List<Artist> getArtists(@Name("names") String[] artistNames) throws GraphQLException {
+    public List<Artist> getArtists(@Name("names") String[] artistNames)
+            throws GraphQLException {
     // end::nameAnnotationGetArtists[]
         List<Artist> toReturn = new ArrayList<>();
 
@@ -73,7 +74,8 @@ public class ArtistService {
         if (missingArtists.size() != 0) {
             String missingArtistNames = String.join(", ", missingArtists);
             logger.severe("Cannot find the following artists: " + missingArtistNames);
-            throw new GraphQLException("Cannot find the following artists: " + missingArtistNames, toReturn);
+            throw new GraphQLException("Cannot find the following artists: " +
+                    missingArtistNames, toReturn);
         }
         // end::graphQlExceptionGetArtists[]
         return toReturn;
@@ -98,9 +100,11 @@ public class ArtistService {
     public boolean addArtist(@Name("artist") Artist artist) throws GraphQLException {
     // end::nameAnnotationAddArtist[]
         // tag::graphQlExceptionArtistExists[]
-        if (artists.containsKey(artist.getName()) || albums.containsKey(artist.getName())) {
+        if (artists.containsKey(artist.getName())
+                || albums.containsKey(artist.getName())) {
             logger.severe("Artist already exists in map: " + artist.getName());
-            throw new GraphQLException("Artist already exists in map: " + artist.getName());
+            throw new GraphQLException("Artist already exists in map: "
+                    + artist.getName());
         }
         // end::graphQlExceptionArtistExists[]
         try {
