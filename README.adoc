@@ -1,4 +1,4 @@
-// Copyright (c) 2020 IBM Corporation and others.
+//  Copyright (c) 2020 IBM Corporation and others.
 // Licensed under Creative Commons Attribution-NoDerivatives
 // 4.0 International (CC BY-ND 4.0)
 //   https://creativecommons.org/licenses/by-nd/4.0/
@@ -6,658 +6,244 @@
 // Contributors:
 //     IBM Corporation
 //
+:projectid: social-login
 :page-layout: guide-multipane
-:projectid: graphql-intro
-:page-duration: 15 minutes
-:page-releasedate: 2020-06-17
-:page-description: Learn how to create and test a GraphQL service using MicroProfile GraphQL and Open Liberty.
+:page-duration: 30 minutes
+:page-releasedate: 2020-06-20
+:page-essential: true
+:page-essential-order: 1
+:page-description: Learn how to authenticate users with the Open Liberty Social Media Login feature.
 :guide-author: Open Liberty
-:page-related-guides: ['cdi-intro', 'rest-intro']
-:page-guide-category: microprofile
-:page-essential: false
+:page-tags: ['Java EE', 'Jakarta EE', 'Security']
+:page-related-guides: ['microprofile-jwt']
 :page-permalink: /guides/{projectid}
-:common-includes: ../guides-common/
-:imagesdir: /img/guide/{projectid}
-:page-seo-title: Creating a GraphQL service and GrahQL client
-:page-seo-description: Find out how to create and test a GraphQL service on Open Liberty
-= Creating and consuming a GraphQL web service
+:page-seo-title: Authenticating users with Social Media Login
+:page-seo-description: A getting started tutorial with examples on how to secure Java applications by authenticating users through social media providers, such as GitHub, using the Open Liberty Social Media Login feature.
+:common-includes: https://raw.githubusercontent.com/OpenLiberty/guides-common/master
+= Authenticating users through social media providers
 
 [.hidden]
-NOTE: This repository contains the guide documentation source. To view the guide in published form,
-view it on the https://openliberty.io/guides/{projectid}.html[Open Liberty website].
+NOTE: This repository contains the guide documentation source. To view the guide in published form, view it on the https://openliberty.io/guides/{projectid}.html[Open Liberty website^].
 
-Explore how to create a GraphQL web service and consume a GraphQL web service using template interfaces.
-
-:graphiql-url: http://localhost:9080/api/graphiql.html
-:schema-url: http://localhost:9080/api/graphql/schema.graphql
+A getting started tutorial with examples on how to secure Java applications by authenticating users through social media
+providers, such as GitHub, using the Open Liberty Social Media Login feature.
 
 == What you'll learn
 
-You'll learn how to create and test a microservice using MicroProfile GraphQL and Open Liberty.
-You'll use Maven throughout the guide to build the microservice and deploy it
-to run on the Open Liberty application server.
+Social Media Login provides a form of single sign-on (SSO) which users can use to sign in to a secured website with
+their existing social media account.
+It simplifies the authentication process for users and allows you to provide a secure authentication
+method for your users without having to explicitly implement it.
 
-=== What is GraphQL
-GraphQL is an open-source data query and manipulation language for APIs, and a runtime for fulfilling these queries with
-existing data.
+The https://openliberty.io/docs/ref/feature/#socialLogin-1.0.html[Social Media Login Feature^] in Open Liberty
+provides configuration elements to configure application authentication using one or more social media platforms,
+including GitHub&reg;, LinkedIn&reg;, Facebook&reg;, Twitter&reg;, and Google&reg;.
+You can also create a custom configuration for any other social media platform that implements
+the https://oauth.net/2[OAuth 2.0^] or https://openid.net/connect[OpenID Connect 1.0^] standard for authorization.
 
-GraphQL queries specify the shape of the response data, which allows users to get exactly what data they want.
-GraphQL APIs contain a single endpoint that handles queries. GraphQL APIs are defined by Types and Fields as opposed
-to being defined by endpoints like REST APIs. This enables GraphQL APIs to operate on multiple resources in the single
-query where REST APIs would require loading the data from multiple URLs.
+By the end of this guide, you will be able to use GitHub to authenticate users to your web service.
 
-You will create a GraphQL web service that queries, manipulates and stores album and artist information.
-The artist and album resources are provided in JSON files.
-
-///////////////////////////
-// Getting started
-///////////////////////////
-
+// =================================================================================================
+// Getting Started
+// =================================================================================================
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/gitclone.adoc[]
+include::{common-includes}/gitclone.adoc[]
 
-///////////////////////////
-// Try what you’ll build
-///////////////////////////
+== Creating a GitHub&reg; OAuth2 Application
 
-[role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-intro.adoc[]
+Obtain an OAuth 2.0 client ID and client secret credentials for accessing the GitHub&reg; developer API by registering
+a new application in your https://github.com/[GitHub&reg;^] account.
+On the https://github.com/settings/developers[Settings > Developer settings > OAuth Apps^] page of your account,
+register a new application.
 
-//--** Describe what user should run and expect to see after running the complete version of the application.
-You are provided with Graphiql, an interactive in-browser GraphQL IDE, which is served by the Open Liberty server.
-You can use Graphiql to perform queries in with an interactive interface to assist in development and testing of the API.
+Set the Homepage URL to `\https://localhost:9443` and
+the authorization callback URL to `\https://localhost:9443/ibm/api/social-login/redirect/githubLogin`.
 
-Once the server is running, access {graphiql-url}[{graphiql-url}^].
-Run the following query to get the artist data for Drake:
+When the registration is complete, the client ID and client secret credentials are displayed.
+To provide your application with the credentials, export the following environment variables: `GITHUB_CLIENT_ID` and
+`GITHUB_CLIENT_SECRET`.
 
-[role='command']
-----
-query {
-    artist(artist: "Drake") {
-        name
-        genres
-        albums {
-            title
-            year
-            ntracks
-        }
-    }
-}
-----
-
-Run the following query to request only the `name` and `genres` field of artists Drake and Rihanna.
-
+Replace the values of `[github-client-id]` and `[github-client-secret]` in the following command.
+include::{common-includes}/os-tabs.adoc[]
+[.tab_content.mac_section.linux_section]
+--
 [role='command']
 ----
-query {
-  artists(artists: ["Drake", "Rihanna"]) {
-    name
-    genres
-  }
-}
+export GITHUB_CLIENT_ID=[github-client-id]
+export GITHUB_CLIENT_SECRET=[github-client-secret]
 ----
-
-Run the following query to add a new artist to the service:
-
+--
+[.tab_content.windows_section]
+--
 [role='command']
 ----
-mutation {
-  addArtist(artist: {
-    name: "Elvis Presley",
-    genres: "Rock and Roll",
-    albums: [
-      {
-        title: "Elvis Presley"
-        ntracks: 12
-        year: "1956"
-      }
-    ]
-  })
-}
+set GITHUB_CLIENT_ID=[github-client-id]
+set GITHUB_CLIENT_SECRET=[github-client-secret]
 ----
+--
 
-Access {schema-url}[{schema-url}^] to view the API schema.
+== Configuring GitHub&reg; social media login
+In the `start` directory, you are provided with an application that is secured through `BASIC` authentication.
+When you access the `hello.html` page, find the `login` button.
+
+Clicking the `login` button opens a login dialog that requests a username and password for
+`defaultRealm`.
+Enabling the Social Login feature will replace the login dialogue with social media login.
+
+First, navigate to the `start` directory.
 
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/twyb-end.adoc[]
+include::{common-includes}/devmode-start.adoc[]
 
-/////////////////////////////
-//== Building the application
-/////////////////////////////
+[role="code_command", subs="quotes"]
+----
+#Update this `server.xml` file.#
+`src/main/liberty/config/server.xml`
+----
+[role="edit_command_text"]
+Add the `socialLogin-1.0` feature definition to the existing list of features.
+Add the `<githubLogin />` configuration element to the server configuration.
 
-Navigate to the `start` directory
+Adding the `socialLogin-1.0` feature definition enables social media login functionality to
+the application, which allows you to use the `<githubLogin />` configuration element to
+configure GitHub&reg; login.
 
+The client ID and client secret for your GitHub&reg; OAuth2 application are injected into the
+`<githubLogin />` configuration element with the values of `github.client.id` and
+`github.client.secret`.
+These values are supplied by the environment variables `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+
+// =================================================================================================
+// Building the application
+// ================================================================================================
 [role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-start.adoc[]
+include::{common-includes}/devmode-build.adoc[]
 
-=== Enabling GraphQL
+Check out the service that you created at
+http://localhost:9080/api/hello.html[^].
 
-The MicroProfile GraphQL feature enables GraphQL support for your application.
-This feature is already enabled in the [hotspot=graphQLFeature]`configuration file`.
+Try logging in with your social media account.
+After authentication, you are redirected to the `/hello` endpoint served by
+`HelloServlet`, which serves the
+`securedHello.jsp` page.
 
-ArtistService.java
-[source,xml,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/liberty/config/server.xml[]
-----
+The `securedHello.jsp` page contains a `logout` button that makes a
+`POST` request to the `/logout` endpoint served by `LogoutServlet`.
 
-=== Creating the GraphQL API
-
-In GraphQL, a single class should represent a single resource, or a group of resources of the same type.
-In this application, artists and albums are the two resources. Since the two resources are related, they can be
-represented by a single class.
-
-The `start` folder already contains the data files, [hotspot file=2]`artists.json` and [hotspot file=3]`albums.json`,
-and their respective model classes, [hotspot file=4]`Album` and [hotspot file=5]`Artist`.
-The `start` folder also contains [hotspot file=1]`JsonService`, a static class to deserialize the artist and album data from data files
-into the model classes.
-
-[role="code_command hotspot", subs="quotes"]
-----
-#Create the `ArtistService` class.#
-`src/main/java/io/openliberty/guides/graphql/ArtistService.java`
-----
-
-The [hotspot=graphQLApi file=0]`@GraphQLApi` annotation indicates that `ArtistService` is a GraphQL endpoint.
-Methods in this class can define GraphQL queries and annotations.
-
-Entities are the objects used in GraphQL. An entity is created in the schema from a custom Java class when the class is
-used as the return type or argument of a query or mutation method, or the return type of a method that has a
-`@Source` annotation applied on an argument.
-
-Queries are GraphQL requests that request all or specific fields of an object.
-A GraphQL query is created in the schema for any method in `ArtistService` annotated with
-[hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query`.
-The value parameter of the [hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query` annotation
-is used for the name of the GraphQL query.
-If the value parameter is not provided, the method's name is used as the query's name.
-
-Mutations are GraphQL requests that modify a resource.
-A GraphQL mutation is created in the schema for any method in `ArtistService` annotated with
-[hotspot=mutationAnnotationAddArtist hotspot=mutationAnnotationReset file=0]`@Mutation`.
-Similar to [hotspot=queryAnnotationGetArtist hotspot=queryAnnotationGetArtists file=0]`@Query`, the value parameter of
-the [hotspot=mutationAnnotationAddArtist hotspot=mutationAnnotationReset file=0]`@Mutation` annotation is used for the
-name of the GraphQL mutation.
-If the value parameter is not provided, the method's name is used as the query's name.
-
-The value parameter of the
-[hotspot=nameAnnotationGetArtist hotspot=nameAnnotationGetArtists hotspot=nameAnnotationAddArtist file=0]`@Name` annotation
-is used for the name of the GraphQL query or mutation parameter.
-If the value parameter is not provided, the method argument's name is used as the the query parameter's name.
-
-The [hotspot=nameAnnotationAlbum file=5]`@Name` annotation can also be used to change the name of an attribute used in a
-class that represents a GraphQL entity.
-The value parameter of the [hotspot=nameAnnotationAlbum file=5]`@Name` annotation is used for the field name in the
-corresponding GraphQL entity.
-
-ArtistService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
-----
-
-JsonService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/JsonService.java[]
-----
-
-artists.json
-[source,json,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/resources/artists.json[]
-----
-
-albums.json
-[source,json,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/resources/albums.json[]
-----
-
-Artist.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
-----
-
-Album.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
-----
-
-=== Queries
-
-The `ArtistService` class contains two queries, [hotspot=queryAnnotationGetArtist]`artist` and
-[hotspot=queryAnnotationGetArtists]`artists`.
-
-The [hotspot=getArtist]`getArtist()` method implements the [hotspot=queryAnnotationGetArtist file=0]`artist`
-query, which retrieves the artist corresponding to the name supplied by the argument
-[hotspot=nameAnnotationGetArtist]`name`.
-When an artist is not found, a [hotspot=graphQlExceptionGetArtist]`GraphQLException` is thrown, which returns
-an `error` object to the client.
-
-The [hotspot=getArtists]`getArtists()` method implements the [hotspot=queryAnnotationGetArtists]`artists`
-query, which retrieves a list of artists corresponding to the list of artist names supplied by the
-[hotspot=nameAnnotationGetArtists]`names` argument.
-When artists in the list of names are not found, a [hotspot=graphQlExceptionGetArtists]`GraphQLException`
-is thrown, which returns an `error` object containing the missing names to the client.
-
-The [hotspot=getArtists]`getArtists()` method gets all possible results instead of throwing a `GraphQLException`
-on the first unknown artist.
-Since GraphQL handles partial results when an error occurs, the found artist objects are returned to the client
-alongside the error when [hotspot=graphQlExceptionGetArtists]`GraphQLException` is thrown.
-
-ArtistService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
-----
-
-=== Mutations
-
-The `ArtistService` class contains two mutations,
-[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` and
-[hotspot=mutationAnnotationReset hotspot=methodSignatureReset file=0]`reset`.
-
-The [hotspot=addArtist file=0]`addArtist()` method implements the
-[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` mutation, which adds a new artist
-to the service.
-If an artist with the same name already exists in the service, the [hotspot=addArtist file=0]`addArtist()` method throws
-a [hotspot=graphQlExceptionArtistExists hotspot=graphQlExceptionAddArtist file=0]`GraphQLException`.
-
-The artist to add to the service is passed to the
-[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` query through the
-[hotspot=nameAnnotationAddArtist file=0]`artist` argument.
-When the entity passed to the artist parameter does not contain an attribute in the [hotspot=attributes file=1]`Artist`
-or [hotspot=attributes file=2]`Album` class
-the value is set as `null`.
-
-When the `@NotNull` annotation is used on an attribute in the [hotspot=notNull file=1]`Artist` and
-[hotspot=notNull file=2]`Album` class, an error is thrown when the entity passed to the
-[hotspot=nameAnnotationAddArtist file=0]`artist` parameter of
-[hotspot=mutationAnnotationAddArtist hotspot=nameAnnotationAddArtist file=0]`addArtist` does not contain that field or
-if the value of the field is `null`.
-
-The [hotspot=reset file=0]`reset()` method implements the
-[hotspot=mutationAnnotationReset hotspot=methodSignatureReset file=0]`reset` mutation, which resets the data handled by
-the service to the data deserialized from the JSON data files.
-This method returns the number of artists removed from the service when the data is reset.
-
-ArtistService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
-----
-
-Artist.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
-----
-
-Album.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
-----
-
-=== Extending the Artist entity
-
-The [hotspot=signatureAlbumCount]`artist` argument (of type `Artist`) of  the
-[hotspot=albumCount]`albumCount()` method is annotated with [hotspot=signatureAlbumCount]`@Source`.
-Since the type `Artist` is returned by a GraphQL query, the [hotspot=signatureAlbumCount]`@Source` annotation
-adds the name of the method, `albumCount` as a property to the `Artist` GraphQL entity.
-
-
-ArtistService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
-----
-
-== Running the application
-
-[role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-build.adoc[]
-
-Access {schema-url}[{schema-url}^] to view the API schema.
-
-The schema for this API looks like:
+Since the logout feature is not fully implemented, clicking the logout button returns an error:
 
 [role='no_copy']
 ----
-type Album {
-  ntracks: Int!
-  title: String!
-  year: String!
-}
-
-type Artist {
-  albumCount: Int!
-  albums: [Album]
-  genres: String!
-  name: String!
-}
-
-"Mutation root"
-type Mutation {
-  addArtist(artist: ArtistInput): Boolean!
-  reset: Int!
-}
-
-"Query root"
-type Query {
-  artist(name: String): Artist
-  artists(artists: [String]): [Artist]
-}
-
-input AlbumInput {
-  ntracks: Int!
-  title: String!
-  year: String!
-}
-
-input ArtistInput {
-  albums: [AlbumInput]
-  genres: String!
-  name: String!
-}
+ Exception thrown by application class 'io.openliberty.guides.sociallogin.LogoutServlet.doPost:50'
+java.lang.NullPointerException:
+at io.openliberty.guides.sociallogin.LogoutServlet.doPost(LogoutServlet.java:50)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:706)
+at javax.servlet.http.HttpServlet.service(HttpServlet.java:791)
+at com.ibm.ws.webcontainer.servlet.ServletWrapper.service(ServletWrapper.java:1230)
+at [internal classes]
 ----
 
-The `!` in the schema indicates that the field of an entity (type or input), or the return value of a mutation, is
-not `null`.
+== Implementing logout
 
-Notice that the schema lists `albumCount: Int!` as part of the type Artist, but `albumCount` is not an attribute of the
- [hotspot=attributes file=1]`Artist` class.
-The [hotspot=signatureAlbumCount file=0]`@Source` annotation applied on the [hotspot=signatureAlbumCount file=0]`artist`
-argument of [hotspot=albumCount file=0]`albumCount()` associates the return value of the method, an integer, to the
-`albumCount` field of the GraphQL type Artist.
+The `LogoutServlet` provided in the `start` directory uses the
+`logout()` method in the `HttpServletRequest`.
+class to log the user out of the application after which the user is redirected to
+`hello.html`.
 
-Access {graphiql-url}[{graphiql-url}^] to open Graphiql.
+You are also provided with a `LogoutHandler` class and `ILogout` interface to add
+custom logout logic to revoke the application's permissions from a user's account.
 
-When you run a GraphQL query, you are required to specify the properties you want for an entity. The result object
-has only the specified properties.
+The `logoutHandler.getLogout()` method gets an implementation
+of `ILogout` for GitHub&reg; and uses the `logout()` method of the `ILogout` interface to revoke
+OAuth2 permissions that are granted to the application by the user.
 
-Run the following query to request the name and number of albums of The Beatles stored in `ArtistService`,
-and the titles of their albums:
+The response returned by this `logout()` method is verified by checking whether it has a
+`2xx` series status code.
+
+The `request.logout()` method is then called to log the user out of the
+application.
+
+The `logoutHandler.getLogout()` method `returns` the
+`implementation` of `ILogout` based on the name of the social media provider that is used
+by a user. The social media provider's name is retrieved by using the
+`UserProfileManager`.
+The social media provider's name that is returned by `UserProfileManager` is the `id`
+of the login configuration.
+
+In this case, when the user uses GitHub&reg;, the name of the social media provider is
+`githubLogin`.
+
+Implement `ILogout` for revoking permissions for the application from the user's GitHub&reg; account.
+
+[role="code_command", subs="quotes"]
+----
+#Replace this `GitHubLogout` class.#
+`src/main/java/io/openliberty/guides/sociallogin/logout/GitHubLogout.java`
+----
+
+GitHub&reg;'s REST API provides a `DELETE` `endpoint` that is used to revoke permissions
+from the user for the application.
+The JAX-RS `HttpClient` is used to send a request to this endpoint.
+
+The `encoded` client ID and client secret, obtained from the `github.client.id` and
+`github.client.secret` config properties are added to the request as an
+`Authorization` header.
+
+The GitHub&reg; `access token` that is retrieved from the user's `UserProfile` through the
+`UserProfileManager` is sent as part of the
+`request body`.
+
+// =================================================================================================
+// Running the application
+// ================================================================================================
+The Open Liberty server was started in development mode at the beginning of the guide and all the changes were
+automatically picked up.
+
+Check out the service that you created at
+http://localhost:9080/api/hello.html[^].
+
+Try logging in with your social media account.
+After authenticating, you will be redirected to `\https://localhost:9080/api/hello`.
+When you click the `logout` button, you are unauthenticated and redirected back to
+http://localhost:9080/api/hello.html[^].
+
+If you try logging in again, you are asked to reauthorize your application with GitHub&reg;, and authenticated and
+redirected to `\https://localhost:9080/api/hello`.
 
 [role='command']
-----
-query {
-  artist(name: "The Beatles") {
-    name
-    albumCount
-    albums {
-      title
-    }
-  }
-}
-----
-
-Run the following query to request the name and title of albums of multiple artists, including an artist that does not
-exist:
-
-[role='command']
-----
-query {
-  artists(names: ["Unknown", "Billie Holiday"]) {
-    name
-    albums {
-      title
-    }
-  }
-}
-----
-
-Notice that the result of the query contains both the error for the unknown artist and the partial results for the
-query, which contains the artist objects for the artists that exist.
-
-The above query can only get the same fields from multiple artist entities. Since GraphQL can support multiple queries
-in a single request, you can get different fields for multiple artist entities by running the following request:
-
-[role='command']
-----
-query {
-  BillieHoliday: artist(name: "Billie Holiday") {
-    name
-    genres
-  }
-  Unknown: artist(name: "Unknown") {
-    name
-  }
-  Drake: artist(name: "Drake") {
-    name
-    albumCount
-  }
-}
-----
-
-Similar to the [hotspot=getArtists file=0]`artists` query, this request also contains an error object for the unknown
-artist "Unknown", and results for the other artists with different fields in each object.
-
-Run the [hotspot=addArtist file=0]`addArtist` mutation to add a new artist to `ArtistService`.
-Attempting to add an artist whose name already exists in the service results in an error.
-Since all attributes of the [hotspot=notNull file=1]`Artist` and [hotspot=notNull file=2]`Album` classes are annotated
-with `@NotNull`, omitting a field or setting it to `null` in the input `artist` for the following mutation will also
-result in an error.
-
-[role='command']
-----
-mutation {
-  addArtist(artist: {
-    name: "Adele",
-    genres: "Pop",
-    albums: [
-      {
-        title: "19"
-        ntracks: 12
-        year: "2008"
-      },
-      {
-        title: "21"
-        ntracks: 11
-        year: "2011"
-      },
-      {
-        title: "25"
-        ntracks: 11
-        year: "2015"
-      }
-    ]
-  })
-}
-----
-
-ArtistService.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/ArtistService.java[]
-----
-
-Artist.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Artist.java[]
-----
-
-Album.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/main/java/io/openliberty/guides/graphql/models/Album.java[]
-----
-
-== Testing the application
-
-You can test this service manually by starting a server and pointing a web browser at the
-{graphiql-url}[{graphiql-url}^] URL.
-Automated tests are a much better approach because they trigger a failure if a change introduces a bug.
-JUnit and the SmallRye GraphQL Client provide a simple environment to test the application.
-
-=== Creating the GraphQL API client interface
-
-The GraphQL Client API and its implementation are included as dependencies specified in your
-[hotspot=clientDependencies file=2]`pom.xml` file.
-Look for the dependencies with the [hotspot=graphQlClientApiDependency file=2]`smallrye-graphql-client-api` and
-[hotspot=graphQlClientDependency file=2]`smallrye-graphql-client` artifact IDs.
-
-These dependencies provides the library that is required to implement the GraphQL Rest Client interface.
-
-The GraphQL client API uses template interface to describe the remote service that you want to access.
-The interface defines the queries and mutations to access as a method by mapping its annotations, return type and list
-of arguments.
-
-Since GraphQL requires that the required fields for an entity be sent with the query, the GraphQL client derives the
-required fields from the attributes of the return type.
-If the GraphQL client interface has a method annotated with `@Query` that maps the `artist` query and returns an
-instance of the `Artist` class, the following query is requested from the GraphQL API:
-
-[role='no_copy']
-----
-query {
-  artist(name: ...) {
-    name
-    genres
-    albums {
-      title
-      ntracks
-      year
-    }
-  }
-}
-----
-
-For the GraphQL client to query an artist with the `albumCount` field, you need to create a class that extends the
-`Artist` class and contains the `albumCount` attribute.
-
-[role="code_command hotspot", subs="quotes"]
-----
-#Create the `ArtistWithAlbumCount` class.#
-`src/test/java/io/openliberty/guides/graphql/client/models/ArtistService.java`
-----
-
-The [hotspot=artistWithAlbumCount file=0]`ArtistWithAlbumCount` class extends the [hotspot=extends file=0]`Artist` class
-and contains the attribute [hotspot=albumCount file=0]`albumCount` that is annotated with
-[hotspot=albumCount file=0]`@NotNull`.
-If the GraphQL client interface has a method annotated with `@Query` that returns an instance of the
-`ArtistWithAlbumCount` class, the following fields are requested from the GraphQL API:
-
-[role='no_copy']
-----
-query {
-  artist(name: ...) {
-    name
-    genres
-    albumCount
-    albums {
-      title
-      ntracks
-      year
-    }
-  }
-}
-----
-
-If you require a different subset of fields from the artist entity, you should create another class that maps to the
-required fields.
-
-Next, create a GraphQL client interface for the system service.
-Write a template interface that maps the API of the artist service.
-
-[role="code_command hotspot", subs="quotes"]
-----
-#Create the `ArtistServiceAPI` class.#
-`src/test/java/io/openliberty/graphql/client/ArtistServiceAPI.java`
-----
-
-The [hotspot=artistServiceApi file=1]`ArtistServiceAPI` interface contains two methods annotated with
-`@Mutation`, the [hotspot=addArtist file=1]`addArtist()` method that maps to the `addArtist` mutation and the
-[hotspot=reset file=1]`reset()` method that maps to the `reset` mutation.
-
-The [hotspot=artistServiceApi file=1]`interface` contains four methods annotated with `@Query`.
-The `artist` query is modeled by the [hotspot=getArtist file=1]`getArtist()` method which returns an artist object that
-does not contain the `albumCount` field, and the [hotspot=getArtistWithAlbumCount file=1]`getArtistWithAlbumCount()` method
-which returns an artist object that contains the `albumCount` field. Similarly, the `artists` query is modeled by
-the [hotspot=getArtists file=1]`getArtists()` method and the
-[hotspot=getArtistsWithAlbumCount file=1]`getArtistsWithAlbumCount()` method.
-The [hotspot=getArtists file=1]`getArtists()` method returns artist objects that do not contain the `albumCount` field
-and the [hotspot=getArtistsWithAlbumCount file=1]`getArtistsWithAlbumCount()` method returns artist objects that
-contain the `albumCount` field.
-
-ArtistWithAlbumCount.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/test/java/io/openliberty/guides/graphql/client/models/ArtistWithAlbumCount.java[]
-----
-
-ArtistServiceAPI.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/test/java/io/openliberty/guides/graphql/client/ArtistServiceAPI.java[]
-----
-
-pom.xml
-[source,xml,linenums,role='code_column hide_tags=comment']
-----
-include::finish/pom.xml[]
-----
-
-=== Creating the test class
-
-[role="code_command hotspot", subs="quotes"]
-----
-#Create the `ArtistServiceIT` class.#
-`src/test/java/io/openliberty/graphql/ArtistServiceIT.java`
-----
-
-The [hotspot=verifyArtist]`verifyArtist()` and [hotspot=verifyAlbums]`verifyAlbums()` helper methods test the equality
-of the expected `Artist` and `Album` objects and the objects returned by the GraphQL API.
-The test methods, annotated with
-[hotspot=testAnnotationTestGetArtist hotspot=testAnnotationTestGetUnknownArtist hotspot=testAnnotationTestGetArtists hotspot=testAnnotationTestGetArtistWithAlbumCount hotspot=testAnnotationTestAddArtistMutation hotspot=testAnnotationTestResetMutation]`@Test`,
-use the GraphQL client to test a query/mutation in the GraphQL API.
-The [hotspot=setupClientAndArtists]`setupClientAndArtists()` method resets the `ArtistService` service, gets the expected
-`Artist` and `Album` objects and builds the GraphQL client.
-This method is executed once before running the tests.
-
-The [hotspot=getArtist]`testGetArtist()` test method executes the `artist` query on a single artist and verifies that
-the correct object is returned.
-
-The [hotspot=getUnknownArtist]`testGetUnknownArtist()` test method executes the `artist` query on a nonexistent artist
-and verifies that a `GraphQLException` is triggered.
-
-The [hotspot=getArtists]`testGetArtists()` test method executes the `artists` query and verifies that all the returned
-objects are correct.
-
-The [hotspot=getArtistWithAlbumCount]`testGetArtistWithAlbumCount()` test method executes the `artist` query. The query
-is requested with the `albumCount` field by using the `getArtistWithAlbumCount()` method in the client which returns an
-`ArtistWithAlbumCount` object.
-This test method verifies that the correct object is returned and that the object has the correct album count.
-
-The [hotspot=addArtistMutation]`testAddArtistMutation()` test method executes the `addArtist` mutation to add a new artist
-to the service.
-It uses the `artist` query to request the newly added artist and verifies that the correct artist object is returned,
-with the correct value for `albumCount`.
-
-The [hotspot=resetMutation]`testResetMutation()` test method executes the `reset` mutation and verifies that the number
-of deleted artists from the service is 1, since we added one new artist to the service.
-
-ArtistServiceIT.java
-[source,java,linenums,role='code_column hide_tags=comment']
-----
-include::finish/src/test/java/io/openliberty/guides/graphql/ArtistServiceIT.java[]
-----
-
-[role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-test.adoc[]
-
-[role='command']
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/devmode-quit.adoc[]
+include::{common-includes}/devmode-quit.adoc[]
 
 == Great work! You're done!
 
-EXAMPLE: You have just completed building a simple artist management application using MicroProfile GraphQL and
-GraphQL client in Open Liberty.
+You secured a web application in Open Liberty by using the Social Media Login feature.
 
-link:https://raw.githubusercontent.com/OpenLiberty/guides-common/master/attribution.adoc[]
+== Next steps
 
-// ------------ END ------------
+As an exercise, configure Facebook&reg; as a second social media provider for social media login for your application.
+If more than one social media login provider is added, a selection form is presented to the user. This form contains
+all the possible social media providers that are configured in your application.
+
+Create the `<facebookLogin />` configuration element in `server.xml` to set up login for Facebook&reg;.
+Similar to `<githubLogin />`, `<facebookLogin />` also requires only a client ID and client secret.
+
+Then, implement `ILogout` as `FacebookLogout` for revoking permissions for the application from the Facebook&reg; user
+account and update `LogoutHandler` to inject `FacebookLogout` and return it when the social media name is
+`facebookLogin`.
+
+The following links to Facebook&reg; documentation provides any additional information about setting up an OAuth2
+application and revoking permissions.
+
+- https://developers.facebook.com/docs/apps#register[Registering for a Facebook&reg; application^]
+- https://developers.facebook.com/docs/facebook-login/web#redirecturl[Adding Facebook&reg; Login to your Facebook&reg; Application^]
+- https://developers.facebook.com/docs/facebook-login/permissions/requesting-and-revoking#revokelogin[Revoking Facebook&reg; Login^]
+
+== Related Links
+
+Learn more about MicroProfile.
+
+https://microprofile.io/[See the MicroProfile specs^]
+
+https://openliberty.io/docs/ref/microprofile[View the MicroProfile API^]
+
+
+include::{common-includes}/attribution.adoc[subs="attributes"]
